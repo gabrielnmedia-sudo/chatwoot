@@ -137,6 +137,18 @@ const menuItems = computed(() => {
       },
     },
     {
+      name: 'Contacts',
+      label: t('SIDEBAR.CONTACTS'),
+      icon: 'i-lucide-book-user',
+      to: accountScopedRoute('contacts_dashboard_index'),
+      activeOn: [
+        'contacts_dashboard_index',
+        'contacts_dashboard_segments_index',
+        'contacts_dashboard_labels_index',
+        'contacts_edit',
+      ],
+    },
+    {
       name: 'Conversation',
       label: t('SIDEBAR.CONVERSATIONS'),
       icon: 'i-lucide-message-circle',
