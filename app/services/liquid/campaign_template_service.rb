@@ -22,12 +22,14 @@ class Liquid::CampaignTemplateService
     rendered_content = template.render(drops)
     process_spintax(rendered_content)
   rescue Liquid::Error
-    message
+    process_spintax(message)
   end
 
   def process_spintax(text)
     loop do
-      new_text = text.gsub(/\{([^{}]*)\}/) { Regexp.last_match(1).split('|').sample }
+      new_text = text.gsub(/\{([^{}]*)\}/) do |match|
+        match[1..-2].split('|').sample
+      end
       break if new_text == text
 
       text = new_text
