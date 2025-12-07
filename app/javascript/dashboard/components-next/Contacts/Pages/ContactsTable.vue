@@ -119,10 +119,10 @@ const closeColumnSelector = () => {
   <div class="flex flex-col gap-4">
     <div class="flex justify-end relative">
         <Button
-            label="Customize Columns"
             icon="i-lucide-settings-2"
-            variant="outline"
+            variant="ghost"
             color="slate"
+            size="sm"
             @click="toggleColumnSelector"
         />
         <div
