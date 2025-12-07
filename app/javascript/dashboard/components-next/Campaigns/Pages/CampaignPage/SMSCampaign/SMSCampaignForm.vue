@@ -103,9 +103,11 @@ const getErrorMessage = (field, errorKey) => {
 };
 
 // Helper for sequence errors
+// Helper for sequence errors
 const getSequenceErrorMessage = (index, field) => {
-  const sequenceError = v$.value.sequences.$each.$response.$errors[index]?.[field];
-  return sequenceError?.length ? t('CAMPAIGN.SMS.CREATE.FORM.REQUIRED_ERROR') : '';
+  if (!v$.value.sequences?.$each?.[index]) return '';
+  const fieldModel = v$.value.sequences.$each[index][field];
+  return fieldModel?.$error ? t('CAMPAIGN.SMS.CREATE.FORM.REQUIRED_ERROR') : '';
 };
 
 const formErrors = computed(() => ({
