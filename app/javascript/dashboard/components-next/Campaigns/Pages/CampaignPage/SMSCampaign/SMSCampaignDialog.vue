@@ -1,4 +1,4 @@
-<script setup>
+import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'dashboard/composables/store';
 import { useAlert, useTrack } from 'dashboard/composables';
@@ -9,9 +9,14 @@ import SMSCampaignForm from 'dashboard/components-next/Campaigns/Pages/CampaignP
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 
 const emit = defineEmits(['close']);
+const dialogRef = ref(null);
 
 const store = useStore();
 const { t } = useI18n();
+
+onMounted(() => {
+  dialogRef.value?.open();
+});
 
 const addCampaign = async campaignDetails => {
   try {
@@ -53,8 +58,8 @@ const handleClose = () => emit('close');
 </script>
 
 <template>
-<template>
   <Dialog
+    ref="dialogRef"
     :title="t('CAMPAIGN.SMS.CREATE.TITLE')"
     :show-cancel-button="false"
     :show-confirm-button="false"
@@ -62,5 +67,4 @@ const handleClose = () => emit('close');
   >
     <SMSCampaignForm @submit="handleSubmit" @cancel="handleClose" />
   </Dialog>
-</template>
 </template>
