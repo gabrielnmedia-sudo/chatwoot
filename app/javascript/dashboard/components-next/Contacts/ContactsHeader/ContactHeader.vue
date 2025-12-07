@@ -1,10 +1,15 @@
 <script setup>
+import { ref, computed } from 'vue';
+import { useStorage } from '@vueuse/core';
+import { vOnClickOutside } from '@vueuse/components';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import ContactSortMenu from './components/ContactSortMenu.vue';
 import ContactMoreActions from './components/ContactMoreActions.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
+import { CONTACT_COLUMNS, DEFAULT_VISIBLE_COLUMNS } from 'dashboard/constants/contactColumns';
 
 defineProps({
   showSearch: { type: Boolean, default: true },
@@ -29,6 +34,28 @@ const emit = defineEmits([
   'createSegment',
   'deleteSegment',
 ]);
+
+const showColumnSelector = ref(false);
+
+const visibleColumnKeys = useStorage('chatwoot_contacts_table_columns', DEFAULT_VISIBLE_COLUMNS);
+
+const toggleColumnSelector = () => {
+  showColumnSelector.value = !showColumnSelector.value;
+};
+
+const closeColumnSelector = () => {
+  showColumnSelector.value = false;
+};
+
+const toggleColumn = (key) => {
+  if (visibleColumnKeys.value.includes(key)) {
+    if (visibleColumnKeys.value.length > 1) {
+      visibleColumnKeys.value = visibleColumnKeys.value.filter(k => k !== key);
+    }
+  } else {
+    visibleColumnKeys.value.push(key);
+  }
+};
 </script>
 
 <template>
@@ -101,7 +128,36 @@ const emit = defineEmits([
               variant="ghost"
               @click="emit('deleteSegment')"
             />
-            <div id="contact-customize-columns-target" class="contents" />
+
+            <!-- Column Selector -->
+            <div class="relative flex items-center">
+              <Button
+                icon="i-lucide-settings-2"
+                variant="ghost"
+                color="slate"
+                size="sm"
+                @click="toggleColumnSelector"
+              />
+              <div
+                v-if="showColumnSelector"
+                v-on-click-outside="closeColumnSelector"
+                class="absolute top-full right-0 mt-2 z-50 flex flex-col p-2 min-w-48 bg-white dark:bg-n-solid-3 rounded-lg shadow-xl border border-n-weak"
+              >
+                <div
+                  v-for="col in CONTACT_COLUMNS"
+                  :key="col.key"
+                  class="flex items-center gap-2 p-2 hover:bg-n-alpha-1 rounded cursor-pointer"
+                  @click.stop="toggleColumn(col.key)"
+                >
+                  <Checkbox
+                    :model-value="visibleColumnKeys.includes(col.key)"
+                    @click.stop="toggleColumn(col.key)"
+                  />
+                  <span class="text-sm text-n-slate-12 select-none">{{ col.label }}</span>
+                </div>
+              </div>
+            </div>
+
             <ContactSortMenu
               :active-sort="activeSort"
               :active-ordering="activeOrdering"

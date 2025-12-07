@@ -1,16 +1,16 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStorage } from '@vueuse/core';
 import countries from 'shared/constants/countries';
 import { formatDistanceToNow } from 'date-fns';
-import { vOnClickOutside } from '@vueuse/components';
 import { useMapGetter } from 'dashboard/composables/store';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Flag from 'dashboard/components-next/flag/Flag.vue';
+import { CONTACT_COLUMNS, DEFAULT_VISIBLE_COLUMNS } from 'dashboard/constants/contactColumns';
 
 const props = defineProps({
   contacts: { type: Array, required: true },
@@ -20,31 +20,13 @@ const props = defineProps({
 const emit = defineEmits(['toggleContact', 'showContact', 'toggleAllContacts']);
 
 const { t } = useI18n();
-const showColumnSelector = ref(false);
 const allLabels = useMapGetter('labels/getLabels');
 
-const availableColumns = [
-  { key: 'name', label: 'Name' },
-  { key: 'email', label: 'Email' },
-  { key: 'phone_number', label: 'Phone Number' },
-  { key: 'company_name', label: 'Company' },
-  { key: 'city', label: 'City' },
-  { key: 'country', label: 'Country' },
-  { key: 'tags', label: 'Tags' },
-  { key: 'last_activity_at', label: 'Last Activity' },
-];
-
-const visibleColumnKeys = useStorage('chatwoot_contacts_table_columns', [
-  'name',
-  'email',
-  'phone_number',
-  'company_name',
-  'tags',
-  'last_activity_at',
-]);
+// Shared storage key with ContactHeader.vue
+const visibleColumnKeys = useStorage('chatwoot_contacts_table_columns', DEFAULT_VISIBLE_COLUMNS);
 
 const visibleColumns = computed(() =>
-  availableColumns.filter(col => visibleColumnKeys.value.includes(col.key))
+  CONTACT_COLUMNS.filter(col => visibleColumnKeys.value.includes(col.key))
 );
 
 const countriesMap = computed(() => {
@@ -56,16 +38,6 @@ const countriesMap = computed(() => {
 });
 
 const getCountryName = (code) => countriesMap.value[code]?.name || code;
-
-const toggleColumn = (key) => {
-  if (visibleColumnKeys.value.includes(key)) {
-    if (visibleColumnKeys.value.length > 1) {
-      visibleColumnKeys.value = visibleColumnKeys.value.filter(k => k !== key);
-    }
-  } else {
-    visibleColumnKeys.value.push(key);
-  }
-};
 
 const isSelected = (id) => props.selectedContactIds.includes(id);
 
@@ -94,14 +66,6 @@ const timeAgo = (date) => {
     return formatDistanceToNow(new Date(date), { addSuffix: true });
 };
 
-const toggleColumnSelector = () => {
-    showColumnSelector.value = !showColumnSelector.value;
-};
-
-const closeColumnSelector = () => {
-    showColumnSelector.value = false;
-};
-
 // Helper to get label details from name or object
 const getLabelData = (label) => {
     if (typeof label === 'string') {
@@ -114,35 +78,7 @@ const getLabelData = (label) => {
 
 <template>
   <div class="flex flex-col gap-4">
-    <Teleport to="#contact-customize-columns-target">
-        <div class="relative flex items-center">
-            <Button
-                icon="i-lucide-settings-2"
-                variant="ghost"
-                color="slate"
-                size="sm"
-                @click="toggleColumnSelector"
-            />
-            <div
-                v-if="showColumnSelector"
-                v-on-click-outside="closeColumnSelector"
-                class="absolute top-full right-0 mt-2 z-50 flex flex-col p-2 min-w-48 bg-white dark:bg-n-solid-3 rounded-lg shadow-xl border border-n-weak"
-            >
-                <div
-                    v-for="col in availableColumns"
-                    :key="col.key"
-                    class="flex items-center gap-2 p-2 hover:bg-n-alpha-1 rounded cursor-pointer"
-                    @click.stop="toggleColumn(col.key)"
-                >
-                    <Checkbox
-                        :model-value="visibleColumnKeys.includes(col.key)"
-                        @click.stop="toggleColumn(col.key)"
-                    />
-                    <span class="text-sm text-n-slate-12 select-none">{{ col.label }}</span>
-                </div>
-            </div>
-        </div>
-    </Teleport>
+
 
     <div class="overflow-x-auto border border-n-weak rounded-lg">
       <table class="w-full text-left text-sm whitespace-nowrap">

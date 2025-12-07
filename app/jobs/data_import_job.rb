@@ -33,7 +33,16 @@ class DataImportJob < ApplicationJob
 
     with_import_file do |file|
       csv_reader(file).each do |row|
-        current_contact = @contact_manager.build_contact(row.to_h.with_indifferent_access)
+        contact_params = row.to_h.with_indifferent_access
+        mapping = @data_import.settings.dig('mapping')
+
+        if mapping.present?
+          contact_params = mapping.map do |k, v|
+            [k, row[v]]
+          end.to_h.with_indifferent_access
+        end
+
+        current_contact = @contact_manager.build_contact(contact_params)
         if current_contact.valid?
           contacts << current_contact
         else
