@@ -30,7 +30,6 @@ const emit = defineEmits([
   'update:sort',
   'add',
   'import',
-  'export',
   'createSegment',
   'deleteSegment',
 ]);
@@ -166,7 +165,6 @@ const toggleColumn = (key) => {
             <ContactMoreActions
               @add="emit('add')"
               @import="emit('import')"
-              @export="emit('export')"
             />
           </div>
           <div class="w-px h-4 bg-n-strong" />

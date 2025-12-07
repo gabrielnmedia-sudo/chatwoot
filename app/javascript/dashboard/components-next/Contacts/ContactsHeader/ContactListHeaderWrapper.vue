@@ -20,7 +20,6 @@ import {
 
 import ContactsHeader from 'dashboard/components-next/Contacts/ContactsHeader/ContactHeader.vue';
 import CreateNewContactDialog from 'dashboard/components-next/Contacts/ContactsForm/CreateNewContactDialog.vue';
-import ContactExportDialog from 'dashboard/components-next/Contacts/ContactsForm/ContactExportDialog.vue';
 import ContactImportDialog from 'dashboard/components-next/Contacts/ContactsForm/ContactImportDialog.vue';
 import CreateSegmentDialog from 'dashboard/components-next/Contacts/ContactsForm/CreateSegmentDialog.vue';
 import DeleteSegmentDialog from 'dashboard/components-next/Contacts/ContactsForm/DeleteSegmentDialog.vue';
@@ -51,7 +50,6 @@ const store = useStore();
 const router = useRouter();
 
 const createNewContactDialogRef = ref(null);
-const contactExportDialogRef = ref(null);
 const contactImportDialogRef = ref(null);
 const createSegmentDialogRef = ref(null);
 const deleteSegmentDialogRef = ref(null);
@@ -74,8 +72,6 @@ const openCreateNewContactDialog = async () => {
 };
 const openContactImportDialog = () =>
   contactImportDialogRef.value?.dialogRef.open();
-const openContactExportDialog = () =>
-  contactExportDialogRef.value?.dialogRef.open();
 const openCreateSegmentDialog = () =>
   createSegmentDialogRef.value?.dialogRef.open();
 const openDeleteSegmentDialog = () =>
@@ -118,20 +114,6 @@ const onImport = async ({ file, mapping, importTag }) => {
         t('CONTACTS_LAYOUT.HEADER.ACTIONS.IMPORT_CONTACT.ERROR_MESSAGE')
     );
     useTrack(CONTACTS_EVENTS.IMPORT_FAILURE);
-  }
-};
-
-const onExport = async query => {
-  try {
-    await store.dispatch('contacts/export', query);
-    useAlert(
-      t('CONTACTS_LAYOUT.HEADER.ACTIONS.EXPORT_CONTACT.SUCCESS_MESSAGE')
-    );
-  } catch (error) {
-    useAlert(
-      error.message ||
-        t('CONTACTS_LAYOUT.HEADER.ACTIONS.EXPORT_CONTACT.ERROR_MESSAGE')
-    );
   }
 };
 
@@ -287,7 +269,6 @@ defineExpose({
     @update:sort="emit('update:sort', $event)"
     @add="openCreateNewContactDialog"
     @import="openContactImportDialog"
-    @export="openContactExportDialog"
     @filter="onToggleFilters"
     @create-segment="openCreateSegmentDialog"
     @delete-segment="openDeleteSegmentDialog"
@@ -311,7 +292,6 @@ defineExpose({
   </ContactsHeader>
 
   <CreateNewContactDialog ref="createNewContactDialogRef" @create="onCreate" />
-  <ContactExportDialog ref="contactExportDialogRef" @export="onExport" />
   <ContactImportDialog ref="contactImportDialogRef" @import="onImport" />
   <CreateSegmentDialog ref="createSegmentDialogRef" @create="onCreateSegment" />
   <DeleteSegmentDialog ref="deleteSegmentDialogRef" @delete="onDeleteSegment" />
