@@ -1,15 +1,15 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStorage } from '@vueuse/core';
 import countries from 'shared/constants/countries';
-import timeago from 'dashboard/helper/timeago';
+import { formatDistanceToNow } from 'date-fns';
+import { vOnClickOutside } from '@vueuse/components';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Flag from 'dashboard/components-next/flag/Flag.vue';
-import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 
 const props = defineProps({
   contacts: { type: Array, required: true },
@@ -19,6 +19,7 @@ const props = defineProps({
 const emit = defineEmits(['toggleContact', 'showContact']);
 
 const { t } = useI18n();
+const showColumnSelector = ref(false);
 
 const availableColumns = [
   { key: 'name', label: 'Name' },
@@ -68,42 +69,48 @@ const handleSelect = (id, checked) => {
   emit('toggleContact', { id, value: checked });
 };
 
-const handleRowClick = (id) => {
-    // Optional: could navigate on row click
-    // emit('showContact', id);
+const timeAgo = (date) => {
+    if (!date) return '';
+    return formatDistanceToNow(new Date(date), { addSuffix: true });
+};
+
+const toggleColumnSelector = () => {
+    showColumnSelector.value = !showColumnSelector.value;
+};
+
+const closeColumnSelector = () => {
+    showColumnSelector.value = false;
 };
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
-    <div class="flex justify-end">
-        <DropdownMenu>
-            <template #trigger="{ toggle }">
-                <Button
-                    label="Customize Columns"
-                    icon="i-lucide-settings-2"
-                    variant="outline"
-                    color="slate"
-                    @click="toggle"
+    <div class="flex justify-end relative">
+        <Button
+            label="Customize Columns"
+            icon="i-lucide-settings-2"
+            variant="outline"
+            color="slate"
+            @click="toggleColumnSelector"
+        />
+        <div
+            v-if="showColumnSelector"
+            v-on-click-outside="closeColumnSelector"
+            class="absolute top-full right-0 mt-2 z-10 flex flex-col p-2 min-w-48 bg-white dark:bg-n-solid-3 rounded-lg shadow-xl border border-n-weak"
+        >
+            <div
+                v-for="col in availableColumns"
+                :key="col.key"
+                class="flex items-center gap-2 p-2 hover:bg-n-alpha-1 rounded cursor-pointer"
+                @click.stop="toggleColumn(col.key)"
+            >
+                <Checkbox
+                    :model-value="visibleColumnKeys.includes(col.key)"
+                    @click.stop="toggleColumn(col.key)"
                 />
-            </template>
-            <template #content>
-                <div class="flex flex-col p-2 min-w-48 bg-white dark:bg-n-solid-3 rounded shadow-lg border border-n-weak">
-                    <div
-                        v-for="col in availableColumns"
-                        :key="col.key"
-                        class="flex items-center gap-2 p-2 hover:bg-n-alpha-1 rounded cursor-pointer"
-                        @click.stop="toggleColumn(col.key)"
-                    >
-                        <Checkbox
-                            :model-value="visibleColumnKeys.includes(col.key)"
-                            @click.stop="toggleColumn(col.key)"
-                        />
-                        <span class="text-sm text-n-slate-12">{{ col.label }}</span>
-                    </div>
-                </div>
-            </template>
-        </DropdownMenu>
+                <span class="text-sm text-n-slate-12 select-none">{{ col.label }}</span>
+            </div>
+        </div>
     </div>
 
     <div class="overflow-x-auto border border-n-weak rounded-lg">
@@ -168,7 +175,7 @@ const handleRowClick = (id) => {
                 </td>
 
                 <td v-if="visibleColumnKeys.includes('last_activity_at')" class="px-4 py-3 text-n-slate-11">
-                    {{ timeago(contact.lastActivityAt) }}
+                    {{ timeAgo(contact.lastActivityAt) }}
                 </td>
 
                 <td class="px-4 py-3">
