@@ -24,6 +24,7 @@ class Sms::OneoffSmsCampaignService
 
       content = Liquid::CampaignTemplateService.new(campaign: campaign, contact: contact).call(campaign.message)
       send_message(to: contact.phone_number, content: content)
+      sleep 2
     end
   end
 
