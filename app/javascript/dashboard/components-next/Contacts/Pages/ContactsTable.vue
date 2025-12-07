@@ -16,7 +16,7 @@ const props = defineProps({
   selectedContactIds: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(['toggleContact', 'showContact']);
+const emit = defineEmits(['toggleContact', 'showContact', 'toggleAllContacts']);
 
 const { t } = useI18n();
 const showColumnSelector = ref(false);
@@ -69,6 +69,38 @@ const handleSelect = (id, checked) => {
   emit('toggleContact', { id, value: checked });
 };
 
+const isAllSelected = computed(() => {
+    return props.contacts.length > 0 && props.selectedContactIds.length === props.contacts.length;
+});
+
+const isIndeterminate = computed(() => {
+    return props.selectedContactIds.length > 0 && props.selectedContactIds.length < props.contacts.length;
+});
+
+const toggleSelectAll = () => {
+    if (isAllSelected.value) {
+        // Deselect all
+        props.contacts.forEach(contact => {
+             if (isSelected(contact.id)) {
+                 emit('toggleContact', { id: contact.id, value: false });
+             }
+        });
+        // Alternatively, if the parent can handle bulk deselect:
+        // emit('toggleAllContacts', false);
+    } else {
+        // Select all
+        const allIds = props.contacts.map(c => c.id);
+         // This might be inefficient to emit one by one. 
+         // Better to emit a new event or rely on parent handling.
+         // Given the current interface 'toggleContact' takes single ID, 
+         // let's assume we iterate or if we can change the parent logic.
+         // Let's stick to iterating for now or better, update the ContactsIndex to handle 'toggleAllContacts'
+         
+         // Actually, let's emit a bulk event 'toggleSelectAll'
+          emit('toggleAllContacts', !isAllSelected.value);
+    }
+};
+
 const timeAgo = (date) => {
     if (!date) return '';
     return formatDistanceToNow(new Date(date), { addSuffix: true });
@@ -118,7 +150,11 @@ const closeColumnSelector = () => {
         <thead class="bg-n-alpha-1 text-n-slate-11 font-medium border-b border-n-weak">
           <tr>
             <th class="px-4 py-3 w-10">
-                <!-- Select All could go here -->
+                <Checkbox
+                    :model-value="isAllSelected"
+                    :indeterminate="isIndeterminate"
+                     @click.stop="toggleSelectAll"
+                />
             </th>
             <th v-for="col in visibleColumns" :key="col.key" class="px-4 py-3">
               {{ col.label }}

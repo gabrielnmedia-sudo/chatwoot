@@ -482,6 +482,7 @@ onMounted(async () => {
             :contacts="contacts"
             :selected-contact-ids="selectedContactIds"
             @toggle-contact="toggleContactSelection"
+            @toggle-all-contacts="toggleSelectAll"
             @show-contact="(_id) => onClickViewDetails(_id)"
           />
           <Dialog
