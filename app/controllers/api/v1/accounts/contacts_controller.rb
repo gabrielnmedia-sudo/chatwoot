@@ -39,7 +39,10 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
     ActiveRecord::Base.transaction do
       import = Current.account.data_imports.new(data_type: 'contacts')
       import.import_file.attach(params[:import_file])
-      import.settings = { mapping: JSON.parse(params[:mapping]) } if params[:mapping].present?
+      settings = {}
+      settings[:mapping] = JSON.parse(params[:mapping]) if params[:mapping].present?
+      settings[:import_tag] = params[:import_tag] if params[:import_tag].present?
+      import.settings = settings
       import.save!
     end
 

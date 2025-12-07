@@ -21,6 +21,7 @@ const hasSelectedFile = ref(null);
 const selectedFileName = ref('');
 const csvHeaders = ref([]);
 const columnMapping = reactive({});
+const importTag = ref('');
 
 const csvUrl = '/downloads/import-contacts-sample.csv';
 
@@ -128,7 +129,7 @@ const handleRemoveFile = () => {
 
 const uploadFile = async () => {
   if (!hasSelectedFile.value) return;
-  emit('import', { file: hasSelectedFile.value, mapping: columnMapping });
+  emit('import', { file: hasSelectedFile.value, mapping: columnMapping, importTag: importTag.value });
 };
 
 defineExpose({ dialogRef });
@@ -204,7 +205,22 @@ defineExpose({ dialogRef });
       </div>
 
       <div v-if="hasSelectedFile && csvHeaders.length" class="flex flex-col gap-3 mt-2 border-t border-n-weak pt-4">
-        <h4 class="text-sm font-medium text-n-slate-12">
+        <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-n-slate-12">
+                {{ t('CONTACTS_LAYOUT.HEADER.ACTIONS.IMPORT_CONTACT.TAG_LABEL', 'Import Tag (Optional)') }}
+            </label>
+            <input
+                v-model="importTag"
+                type="text"
+                class="h-8 rounded-md border border-n-weak bg-n-alpha-1 text-sm text-n-slate-12 px-2 focus:ring-1 focus:ring-n-brand focus:border-n-brand"
+                :placeholder="t('CONTACTS_LAYOUT.HEADER.ACTIONS.IMPORT_CONTACT.TAG_PLACEHOLDER', 'e.g. November Leads')"
+            />
+            <span class="text-xs text-n-slate-11">
+                {{ t('CONTACTS_LAYOUT.HEADER.ACTIONS.IMPORT_CONTACT.TAG_HELP', 'This tag will be added to all imported contacts.') }}
+            </span>
+        </div>
+        
+        <h4 class="text-sm font-medium text-n-slate-12 mt-2">
           Map Columns
         </h4>
         <div class="grid grid-cols-2 gap-4">

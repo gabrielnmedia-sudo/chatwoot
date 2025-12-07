@@ -62,6 +62,23 @@ class DataImportJob < ApplicationJob
   def import_contacts(contacts)
     # <struct ActiveRecord::Import::Result failed_instances=[], num_inserts=1, ids=[444, 445], results=[]>
     Contact.import(contacts, synchronize: contacts, on_duplicate_key_ignore: true, track_validation_failures: true, validate: true, batch_size: 1000)
+    
+    import_tag = @data_import.settings.dig('import_tag')
+    apply_import_tag(contacts, import_tag) if import_tag.present?
+  end
+
+  def apply_import_tag(contacts, tag_name)
+    tag = ActsAsTaggableOn::Tag.find_or_create_by(name: tag_name)
+    taggings = contacts.select(&:persisted?).map do |contact|
+      {
+        tag_id: tag.id,
+        taggable_type: 'Contact',
+        taggable_id: contact.id,
+        context: 'labels',
+        created_at: Time.current
+      }
+    end
+    ActsAsTaggableOn::Tagging.insert_all(taggings) if taggings.any?
   end
 
   def update_data_import_status(processed_records, rejected_records)
