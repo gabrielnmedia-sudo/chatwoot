@@ -260,6 +260,7 @@ const handleSubmit = async () => {
             color="ruby" 
             size="sm"
             @click="removeSequence(index)"
+            type="button"
           />
         </div>
 
@@ -309,6 +310,7 @@ const handleSubmit = async () => {
         icon="i-lucide-plus"
         :label="t('CAMPAIGN.SMS.CREATE.FORM.ADD_MESSAGE')"
         @click="addSequence"
+        type="button"
       />
     </div>
 
