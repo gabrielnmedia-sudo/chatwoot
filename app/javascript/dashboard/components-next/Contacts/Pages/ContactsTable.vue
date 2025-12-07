@@ -1,0 +1,188 @@
+<script setup>
+import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useStorage } from '@vueuse/core';
+import countries from 'shared/constants/countries';
+import timeago from 'dashboard/helper/timeago';
+
+import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
+import Flag from 'dashboard/components-next/flag/Flag.vue';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
+
+const props = defineProps({
+  contacts: { type: Array, required: true },
+  selectedContactIds: { type: Array, default: () => [] },
+});
+
+const emit = defineEmits(['toggleContact', 'showContact']);
+
+const { t } = useI18n();
+
+const availableColumns = [
+  { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone_number', label: 'Phone Number' },
+  { key: 'company_name', label: 'Company' },
+  { key: 'city', label: 'City' },
+  { key: 'country', label: 'Country' },
+  { key: 'last_activity_at', label: 'Last Activity' },
+];
+
+const visibleColumnKeys = useStorage('chatwoot_contacts_table_columns', [
+  'name',
+  'email',
+  'phone_number',
+  'company_name',
+  'last_activity_at',
+]);
+
+const visibleColumns = computed(() =>
+  availableColumns.filter(col => visibleColumnKeys.value.includes(col.key))
+);
+
+const countriesMap = computed(() => {
+  return countries.reduce((acc, country) => {
+    acc[country.code] = country;
+    acc[country.id] = country;
+    return acc;
+  }, {});
+});
+
+const getCountryName = (code) => countriesMap.value[code]?.name || code;
+
+const toggleColumn = (key) => {
+  if (visibleColumnKeys.value.includes(key)) {
+    if (visibleColumnKeys.value.length > 1) {
+      visibleColumnKeys.value = visibleColumnKeys.value.filter(k => k !== key);
+    }
+  } else {
+    visibleColumnKeys.value.push(key);
+  }
+};
+
+const isSelected = (id) => props.selectedContactIds.includes(id);
+
+const handleSelect = (id, checked) => {
+  emit('toggleContact', { id, value: checked });
+};
+
+const handleRowClick = (id) => {
+    // Optional: could navigate on row click
+    // emit('showContact', id);
+};
+</script>
+
+<template>
+  <div class="flex flex-col gap-4">
+    <div class="flex justify-end">
+        <DropdownMenu>
+            <template #trigger="{ toggle }">
+                <Button
+                    label="Customize Columns"
+                    icon="i-lucide-settings-2"
+                    variant="outline"
+                    color="slate"
+                    @click="toggle"
+                />
+            </template>
+            <template #content>
+                <div class="flex flex-col p-2 min-w-48 bg-white dark:bg-n-solid-3 rounded shadow-lg border border-n-weak">
+                    <div
+                        v-for="col in availableColumns"
+                        :key="col.key"
+                        class="flex items-center gap-2 p-2 hover:bg-n-alpha-1 rounded cursor-pointer"
+                        @click.stop="toggleColumn(col.key)"
+                    >
+                        <Checkbox
+                            :model-value="visibleColumnKeys.includes(col.key)"
+                            @click.stop="toggleColumn(col.key)"
+                        />
+                        <span class="text-sm text-n-slate-12">{{ col.label }}</span>
+                    </div>
+                </div>
+            </template>
+        </DropdownMenu>
+    </div>
+
+    <div class="overflow-x-auto border border-n-weak rounded-lg">
+      <table class="w-full text-left text-sm whitespace-nowrap">
+        <thead class="bg-n-alpha-1 text-n-slate-11 font-medium border-b border-n-weak">
+          <tr>
+            <th class="px-4 py-3 w-10">
+                <!-- Select All could go here -->
+            </th>
+            <th v-for="col in visibleColumns" :key="col.key" class="px-4 py-3">
+              {{ col.label }}
+            </th>
+            <th class="px-4 py-3 w-20">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-n-weak bg-n-background">
+            <tr
+                v-for="contact in contacts"
+                :key="contact.id"
+                class="hover:bg-n-alpha-1 transition-colors"
+            >
+                <td class="px-4 py-3">
+                    <Checkbox
+                        :model-value="isSelected(contact.id)"
+                        @change="(e) => handleSelect(contact.id, e.target.checked)"
+                    />
+                </td>
+                
+                <td v-if="visibleColumnKeys.includes('name')" class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <Avatar
+                            :name="contact.name"
+                            :src="contact.thumbnail"
+                            :size="24"
+                            rounded-full
+                        />
+                        <span class="text-n-slate-12 font-medium">{{ contact.name }}</span>
+                    </div>
+                </td>
+
+                <td v-if="visibleColumnKeys.includes('email')" class="px-4 py-3 text-n-slate-11">
+                    {{ contact.email }}
+                </td>
+
+                <td v-if="visibleColumnKeys.includes('phone_number')" class="px-4 py-3 text-n-slate-11">
+                    {{ contact.phoneNumber }}
+                </td>
+
+                <td v-if="visibleColumnKeys.includes('company_name')" class="px-4 py-3 text-n-slate-11">
+                     {{ contact.additionalAttributes?.companyName }}
+                </td>
+
+                <td v-if="visibleColumnKeys.includes('city')" class="px-4 py-3 text-n-slate-11">
+                     {{ contact.additionalAttributes?.city }}
+                </td>
+
+                 <td v-if="visibleColumnKeys.includes('country')" class="px-4 py-3 text-n-slate-11">
+                    <div v-if="contact.additionalAttributes?.country" class="flex items-center gap-2">
+                        <Flag :country="contact.additionalAttributes?.country" class="size-4" />
+                        <span>{{ getCountryName(contact.additionalAttributes?.country) }}</span>
+                    </div>
+                </td>
+
+                <td v-if="visibleColumnKeys.includes('last_activity_at')" class="px-4 py-3 text-n-slate-11">
+                    {{ timeago(contact.lastActivityAt) }}
+                </td>
+
+                <td class="px-4 py-3">
+                    <Button
+                        icon="i-lucide-external-link"
+                        variant="ghost"
+                        color="slate"
+                        size="xs"
+                        @click="emit('showContact', contact.id)"
+                    />
+                </td>
+            </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>

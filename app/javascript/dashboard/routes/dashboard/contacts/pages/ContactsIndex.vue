@@ -11,7 +11,7 @@ import filterQueryGenerator from 'dashboard/helper/filterQueryGenerator';
 import ContactsListLayout from 'dashboard/components-next/Contacts/ContactsListLayout.vue';
 import ContactEmptyState from 'dashboard/components-next/Contacts/EmptyState/ContactEmptyState.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
-import ContactsList from 'dashboard/components-next/Contacts/Pages/ContactsList.vue';
+import ContactsTable from 'dashboard/components-next/Contacts/Pages/ContactsTable.vue';
 import ContactsBulkActionBar from '../components/ContactsBulkActionBar.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import BulkActionsAPI from 'dashboard/api/bulkActions';
@@ -89,6 +89,20 @@ const activeSegment = computed(() => {
   if (!activeSegmentId.value) return undefined;
   return segments.value.find(view => view.id === Number(activeSegmentId.value));
 });
+
+const onClickViewDetails = async id => {
+  const routeTypes = {
+    contacts_dashboard_segments_index: ['contacts_edit_segment', 'segmentId'],
+    contacts_dashboard_labels_index: ['contacts_edit_label', 'label'],
+  };
+  const [name, paramKey] = routeTypes[route.name] || ['contacts_edit'];
+  const params = {
+    contactId: id,
+    ...(paramKey && { [paramKey]: route.params[paramKey] }),
+  };
+
+  await router.push({ name, params, query: route.query });
+};
 
 const hasContacts = computed(() => contacts.value.length > 0);
 const isContactIndexView = computed(
@@ -464,10 +478,11 @@ onMounted(async () => {
           </span>
         </div>
         <div v-else class="flex flex-col gap-4 px-6 pt-4 pb-6">
-          <ContactsList
+          <ContactsTable
             :contacts="contacts"
             :selected-contact-ids="selectedContactIds"
             @toggle-contact="toggleContactSelection"
+            @show-contact="(_id) => onClickViewDetails(_id)"
           />
           <Dialog
             v-if="selectedCount"
