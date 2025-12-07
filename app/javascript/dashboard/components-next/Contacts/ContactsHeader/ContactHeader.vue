@@ -101,6 +101,7 @@ const emit = defineEmits([
               variant="ghost"
               @click="emit('deleteSegment')"
             />
+            <div id="contact-customize-columns-target" class="contents" />
             <ContactSortMenu
               :active-sort="activeSort"
               :active-ordering="activeOrdering"

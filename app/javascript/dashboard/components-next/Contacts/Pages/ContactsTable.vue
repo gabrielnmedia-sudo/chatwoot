@@ -5,6 +5,7 @@ import { useStorage } from '@vueuse/core';
 import countries from 'shared/constants/countries';
 import { formatDistanceToNow } from 'date-fns';
 import { vOnClickOutside } from '@vueuse/components';
+import { useMapGetter } from 'dashboard/composables/store';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -20,6 +21,7 @@ const emit = defineEmits(['toggleContact', 'showContact', 'toggleAllContacts']);
 
 const { t } = useI18n();
 const showColumnSelector = ref(false);
+const allLabels = useMapGetter('labels/getLabels');
 
 const availableColumns = [
   { key: 'name', label: 'Name' },
@@ -28,6 +30,7 @@ const availableColumns = [
   { key: 'company_name', label: 'Company' },
   { key: 'city', label: 'City' },
   { key: 'country', label: 'Country' },
+  { key: 'tags', label: 'Tags' },
   { key: 'last_activity_at', label: 'Last Activity' },
 ];
 
@@ -36,6 +39,7 @@ const visibleColumnKeys = useStorage('chatwoot_contacts_table_columns', [
   'email',
   'phone_number',
   'company_name',
+  'tags',
   'last_activity_at',
 ]);
 
@@ -79,25 +83,9 @@ const isIndeterminate = computed(() => {
 
 const toggleSelectAll = () => {
     if (isAllSelected.value) {
-        // Deselect all
-        props.contacts.forEach(contact => {
-             if (isSelected(contact.id)) {
-                 emit('toggleContact', { id: contact.id, value: false });
-             }
-        });
-        // Alternatively, if the parent can handle bulk deselect:
-        // emit('toggleAllContacts', false);
+        emit('toggleAllContacts', false);
     } else {
-        // Select all
-        const allIds = props.contacts.map(c => c.id);
-         // This might be inefficient to emit one by one. 
-         // Better to emit a new event or rely on parent handling.
-         // Given the current interface 'toggleContact' takes single ID, 
-         // let's assume we iterate or if we can change the parent logic.
-         // Let's stick to iterating for now or better, update the ContactsIndex to handle 'toggleAllContacts'
-         
-         // Actually, let's emit a bulk event 'toggleSelectAll'
-          emit('toggleAllContacts', !isAllSelected.value);
+        emit('toggleAllContacts', true);
     }
 };
 
@@ -113,37 +101,48 @@ const toggleColumnSelector = () => {
 const closeColumnSelector = () => {
     showColumnSelector.value = false;
 };
+
+// Helper to get label details from name or object
+const getLabelData = (label) => {
+    if (typeof label === 'string') {
+        const found = allLabels.value.find(l => l.title === label);
+        return found || { title: label, color: '#000000' };
+    }
+    return label;
+};
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
-    <div class="flex justify-end relative">
-        <Button
-            icon="i-lucide-settings-2"
-            variant="ghost"
-            color="slate"
-            size="sm"
-            @click="toggleColumnSelector"
-        />
-        <div
-            v-if="showColumnSelector"
-            v-on-click-outside="closeColumnSelector"
-            class="absolute top-full right-0 mt-2 z-10 flex flex-col p-2 min-w-48 bg-white dark:bg-n-solid-3 rounded-lg shadow-xl border border-n-weak"
-        >
+    <Teleport to="#contact-customize-columns-target">
+        <div class="relative flex items-center">
+            <Button
+                icon="i-lucide-settings-2"
+                variant="ghost"
+                color="slate"
+                size="sm"
+                @click="toggleColumnSelector"
+            />
             <div
-                v-for="col in availableColumns"
-                :key="col.key"
-                class="flex items-center gap-2 p-2 hover:bg-n-alpha-1 rounded cursor-pointer"
-                @click.stop="toggleColumn(col.key)"
+                v-if="showColumnSelector"
+                v-on-click-outside="closeColumnSelector"
+                class="absolute top-full right-0 mt-2 z-50 flex flex-col p-2 min-w-48 bg-white dark:bg-n-solid-3 rounded-lg shadow-xl border border-n-weak"
             >
-                <Checkbox
-                    :model-value="visibleColumnKeys.includes(col.key)"
+                <div
+                    v-for="col in availableColumns"
+                    :key="col.key"
+                    class="flex items-center gap-2 p-2 hover:bg-n-alpha-1 rounded cursor-pointer"
                     @click.stop="toggleColumn(col.key)"
-                />
-                <span class="text-sm text-n-slate-12 select-none">{{ col.label }}</span>
+                >
+                    <Checkbox
+                        :model-value="visibleColumnKeys.includes(col.key)"
+                        @click.stop="toggleColumn(col.key)"
+                    />
+                    <span class="text-sm text-n-slate-12 select-none">{{ col.label }}</span>
+                </div>
             </div>
         </div>
-    </div>
+    </Teleport>
 
     <div class="overflow-x-auto border border-n-weak rounded-lg">
       <table class="w-full text-left text-sm whitespace-nowrap">
@@ -167,6 +166,7 @@ const closeColumnSelector = () => {
                 v-for="contact in contacts"
                 :key="contact.id"
                 class="hover:bg-n-alpha-1 transition-colors"
+                @click="handleRowClick(contact.id)"
             >
                 <td class="px-4 py-3">
                     <Checkbox
@@ -207,6 +207,22 @@ const closeColumnSelector = () => {
                     <div v-if="contact.additionalAttributes?.country" class="flex items-center gap-2">
                         <Flag :country="contact.additionalAttributes?.country" class="size-4" />
                         <span>{{ getCountryName(contact.additionalAttributes?.country) }}</span>
+                    </div>
+                </td>
+                
+                <td v-if="visibleColumnKeys.includes('tags')" class="px-4 py-3 text-n-slate-11">
+                    <div v-if="contact.labels" class="flex items-center gap-1 flex-wrap max-w-xs">
+                        <div 
+                            v-for="label in contact.labels" 
+                            :key="label" 
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-n-weak"
+                        >
+                             <div
+                                class="w-1.5 h-1.5 rounded-full mr-1.5"
+                                :style="{ backgroundColor: getLabelData(label).color }"
+                            />
+                            {{ getLabelData(label).title || label }}
+                        </div>
                     </div>
                 </td>
 
