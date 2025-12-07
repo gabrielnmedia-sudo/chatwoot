@@ -126,8 +126,15 @@
             "PLACEHOLDER": "Please select the time",
             "ERROR": "Scheduled time is required"
           },
+          "DELAY": {
+            "MINUTES": "Minutes",
+            "HOURS": "Hours",
+            "DAYS": "Days"
+          },
+          "ADD_MESSAGE": "Add Message",
+          "REQUIRED_ERROR": "This field is required",
           "BUTTONS": {
-            "CREATE": "Create",
+            "CREATE": "Create Campaign",
             "CANCEL": "Cancel"
           },
           "API": {
