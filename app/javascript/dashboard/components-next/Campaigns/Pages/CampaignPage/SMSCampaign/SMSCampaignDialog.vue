@@ -64,6 +64,7 @@ const handleClose = () => emit('close');
     :title="t('CAMPAIGN.SMS.CREATE.TITLE')"
     :show-cancel-button="false"
     :show-confirm-button="false"
+    overflow-y-auto
     @close="handleClose"
   >
     <SMSCampaignForm @submit="handleSubmit" @cancel="handleClose" />

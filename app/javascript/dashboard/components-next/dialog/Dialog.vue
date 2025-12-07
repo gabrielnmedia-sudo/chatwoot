@@ -98,7 +98,7 @@ defineExpose({ open, close });
       class="w-full transition-all duration-300 ease-in-out shadow-xl rounded-xl"
       :class="[
         maxWidthClass,
-        overflowYAuto ? 'overflow-y-auto' : 'overflow-visible',
+        overflowYAuto ? 'overflow-y-auto max-h-[90vh]' : 'overflow-visible',
       ]"
       @close="close"
     >
