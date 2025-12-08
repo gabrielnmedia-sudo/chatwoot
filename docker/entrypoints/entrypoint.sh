@@ -21,5 +21,5 @@ else
   # Using bin/rails server directly or pass through to existing rails.sh if preferred
   # For now, replicate the Procfile web command:
   bundle exec rails db:chatwoot_prepare
-  bundle exec rails ip_lookup:setup && bundle exec rails server -p $PORT -b 0.0.0.0 -e $RAILS_ENV
+  bundle exec rails ip_lookup:setup && bundle exec foreman start -f Procfile.production
 fi
