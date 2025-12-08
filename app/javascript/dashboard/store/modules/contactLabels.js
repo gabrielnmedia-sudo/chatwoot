@@ -39,7 +39,7 @@ export const actions = {
       });
     }
   },
-  update: async ({ commit }, { contactId, labels }) => {
+  update: async ({ commit, dispatch }, { contactId, labels }) => {
     commit(types.SET_CONTACT_LABELS_UI_FLAG, {
       isUpdating: true,
     });
@@ -49,6 +49,15 @@ export const actions = {
         id: contactId,
         data: response.data.payload,
       });
+      // Update the contact in the contacts store as well to reflect changes immediately
+      dispatch(
+        'contacts/setContact',
+        {
+          id: contactId,
+          labels: response.data.payload,
+        },
+        { root: true }
+      );
       commit(types.SET_CONTACT_LABELS_UI_FLAG, {
         isUpdating: false,
         isError: false,
