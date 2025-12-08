@@ -6,13 +6,20 @@ class DataImportJob < ApplicationJob
   retry_on ActiveStorage::FileNotFoundError, wait: 1.minute, attempts: 3
 
   def perform(data_import)
+    Rails.logger.info "DataImportJob: Starting import for DataImport ##{data_import.id}"
     @data_import = data_import
     @contact_manager = DataImport::ContactManager.new(@data_import.account)
     begin
       process_import_file
       send_import_notification_to_admin
     rescue CSV::MalformedCSVError => e
+      Rails.logger.error "DataImportJob: MalformedCSVError for DataImport ##{data_import.id}: #{e.message}"
       handle_csv_error(e)
+    rescue StandardError => e
+      Rails.logger.error "DataImportJob: UNEXPECTED ERROR for DataImport ##{data_import.id}"
+      Rails.logger.error e.message
+      Rails.logger.error e.backtrace.join("\n")
+      raise e
     end
   end
 
@@ -140,8 +147,10 @@ class DataImportJob < ApplicationJob
   def with_import_file
     temp_dir = Rails.root.join('tmp/imports')
     FileUtils.mkdir_p(temp_dir)
+    Rails.logger.info "DataImportJob: Temp dir at #{temp_dir}"
 
     @data_import.import_file.open(tmpdir: temp_dir) do |file|
+      Rails.logger.info "DataImportJob: File successfully downloaded to #{file.path}"
       file.binmode
       yield file
     end
