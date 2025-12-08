@@ -35,7 +35,8 @@
           </span>
         </div>
         
-        <div class="mb-2">
+        <!-- Active Import State (Processing) -->
+        <div v-if="isActive(dataImport.status)" class="mb-2">
            <div class="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
              <span>Processed</span>
              <span>{{ dataImport.processed_records }} / {{ dataImport.total_records }}</span>
@@ -49,10 +50,20 @@
            </div>
         </div>
 
-        <div v-if="dataImport.file_url" class="mt-2 text-xs">
-           <a :href="dataImport.file_url" target="_blank" class="text-woot-500 hover:text-woot-600 dark:text-woot-400 dark:hover:text-woot-300 flex items-center gap-1">
-             <span class="i-lucide-download w-3 h-3"></span>
-             Download CSV
+        <!-- Completed/Failed State -->
+        <div v-else class="flex justify-between items-center text-xs">
+           <span class="text-slate-600 dark:text-slate-400">
+             {{ dataImport.total_records }} contacts
+           </span>
+           
+           <a 
+             v-if="dataImport.file_url" 
+             :href="dataImport.file_url" 
+             target="_blank" 
+             class="text-slate-400 hover:text-woot-500 dark:text-slate-500 dark:hover:text-woot-400 transition-colors"
+             title="Download CSV"
+           >
+             <span class="i-lucide-download w-4 h-4"></span>
            </a>
         </div>
       </div>
@@ -98,6 +109,9 @@ export default {
       } finally {
         this.isLoading = false;
       }
+    },
+    isActive(status) {
+      return status === 'processing' || status === 'pending';
     },
     formatStatus(status) {
       if (!status) return 'Pending';
