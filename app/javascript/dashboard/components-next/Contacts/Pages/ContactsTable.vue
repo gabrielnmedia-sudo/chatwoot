@@ -167,6 +167,15 @@ const getLabelData = (label) => {
                 </td>
 
                 <td class="px-4 py-3">
+                  <div class="flex items-center gap-1">
+                    <Button
+                        v-if="contact.phoneNumber"
+                        icon="i-lucide-phone"
+                        variant="ghost"
+                        color="slate"
+                        size="xs"
+                        @click="() => window.open(`tel:${contact.phoneNumber}`, '_self')"
+                    />
                     <Button
                         icon="i-lucide-external-link"
                         variant="ghost"
@@ -174,6 +183,7 @@ const getLabelData = (label) => {
                         size="xs"
                         @click="emit('showContact', contact.id)"
                     />
+                  </div>
                 </td>
             </tr>
         </tbody>

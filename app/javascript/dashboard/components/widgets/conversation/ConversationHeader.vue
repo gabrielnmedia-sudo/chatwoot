@@ -8,6 +8,7 @@ import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
 import Avatar from 'next/avatar/Avatar.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import wootConstants from 'dashboard/constants/globals';
 import { conversationListPageURL } from 'dashboard/helper/URLHelper';
 import { snoozedReopenTime } from 'dashboard/helper/snoozeHelpers';
@@ -90,6 +91,12 @@ const hasMultipleInboxes = computed(
 );
 
 const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
+
+const callContact = () => {
+  if (currentContact.value.phone_number) {
+    window.open(`tel:${currentContact.value.phone_number}`, '_self');
+  }
+};
 </script>
 
 <template>
@@ -144,6 +151,16 @@ const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
     <div
       class="flex flex-row items-center justify-start xl:justify-end flex-shrink-0 gap-2 w-full xl:w-auto header-actions-wrap"
     >
+      <Button
+        v-if="currentContact.phone_number"
+        v-tooltip="$t('CONTACT_PANEL.CALL')"
+        size="sm"
+        variant="ghost"
+        color="slate"
+        icon="i-lucide-phone"
+        class="rounded-md"
+        @click="callContact"
+      />
       <SLACardLabel
         v-if="hasSlaPolicyId"
         :chat="chat"
