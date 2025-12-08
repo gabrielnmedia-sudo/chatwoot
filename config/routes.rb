@@ -181,6 +181,7 @@ Rails.application.routes.draw do
               post :call, on: :member, to: 'calls#create' if ChatwootApp.enterprise?
             end
           end
+          resources :data_imports, only: [:index, :show]
           resources :csat_survey_responses, only: [:index] do
             collection do
               get :metrics

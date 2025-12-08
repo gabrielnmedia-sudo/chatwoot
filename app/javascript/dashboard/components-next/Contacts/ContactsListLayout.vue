@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router';
 import ContactListHeaderWrapper from 'dashboard/components-next/Contacts/ContactsHeader/ContactListHeaderWrapper.vue';
 import ContactsActiveFiltersPreview from 'dashboard/components-next/Contacts/ContactsHeader/components/ContactsActiveFiltersPreview.vue';
 import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
+import ContactImportHistory from 'dashboard/components-next/Contacts/ContactImportHistory.vue';
 
 const props = defineProps({
   searchValue: { type: String, default: '' },
@@ -86,7 +87,7 @@ const openFilter = () => {
         @clear-filters="emit('clearFilters')"
       />
       <main class="flex-1 overflow-y-auto">
-        <div class="w-full mx-auto max-w-[60rem]">
+        <div class="w-full mx-auto">
           <ContactsActiveFiltersPreview
             v-if="showActiveFiltersPreview"
             :active-segment="activeSegment"
@@ -106,5 +107,6 @@ const openFilter = () => {
         />
       </footer>
     </div>
+    <ContactImportHistory />
   </section>
 </template>
