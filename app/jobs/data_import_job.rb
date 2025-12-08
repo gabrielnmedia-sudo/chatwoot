@@ -92,7 +92,12 @@ class DataImportJob < ApplicationJob
   end
 
   def apply_import_tag(contacts, tag_name)
-    tag = ActsAsTaggableOn::Tag.find_or_create_by(name: tag_name)
+    # Ensure a Label exists for the account so it appears in the UI filters
+    label = @data_import.account.labels.find_or_create_by(title: tag_name)
+    
+    # Use the normalized label title for the tag
+    tag = ActsAsTaggableOn::Tag.find_or_create_by(name: label.title)
+    
     taggings = contacts.select(&:persisted?).map do |contact|
       {
         tag_id: tag.id,
