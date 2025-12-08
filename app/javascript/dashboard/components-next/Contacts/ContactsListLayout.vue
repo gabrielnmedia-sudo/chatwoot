@@ -1,11 +1,13 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { useStorage } from '@vueuse/core';
 
 import ContactListHeaderWrapper from 'dashboard/components-next/Contacts/ContactsHeader/ContactListHeaderWrapper.vue';
 import ContactsActiveFiltersPreview from 'dashboard/components-next/Contacts/ContactsHeader/components/ContactsActiveFiltersPreview.vue';
 import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
 import ContactImportHistory from 'dashboard/components-next/Contacts/ContactImportHistory.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 
 const props = defineProps({
   searchValue: { type: String, default: '' },
@@ -33,6 +35,7 @@ const emit = defineEmits([
 const route = useRoute();
 
 const contactListHeaderWrapper = ref(null);
+const isSidebarOpen = useStorage('chatwoot_contact_import_sidebar_open', false);
 
 const isNotSegmentView = computed(() => {
   return route.name !== 'contacts_dashboard_segments_index';
@@ -66,7 +69,7 @@ const openFilter = () => {
 
 <template>
   <section
-    class="flex w-full h-full gap-4 overflow-hidden justify-evenly bg-n-background"
+    class="flex w-full h-full gap-4 overflow-hidden justify-evenly bg-n-background relative"
   >
     <div class="flex flex-col w-full h-full transition-all duration-300">
       <ContactListHeaderWrapper
@@ -107,6 +110,20 @@ const openFilter = () => {
         />
       </footer>
     </div>
-    <ContactImportHistory />
+    
+    <ContactImportHistory 
+      v-if="isSidebarOpen" 
+      @close="isSidebarOpen = false" 
+    />
+
+    <div v-else class="absolute top-4 right-4 z-10">
+      <Button
+        icon="i-lucide-history"
+        variant="outline"
+        color="slate"
+        size="sm"
+        @click="isSidebarOpen = true"
+      />
+    </div>
   </section>
 </template>

@@ -1,10 +1,18 @@
 <template>
   <div class="flex flex-col h-full overflow-y-auto bg-white border-l border-slate-50 w-80 dark:bg-slate-900 dark:border-slate-800/50">
-    <div class="p-6">
+    <div class="px-6 py-4 flex items-center justify-between border-b border-slate-50 dark:border-slate-800/50">
       <h3 class="text-base font-medium text-slate-900 dark:text-slate-100">
         Import History
       </h3>
-      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      <button 
+        class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+        @click="$emit('close')"
+      >
+        <span class="i-lucide-x w-5 h-5"></span>
+      </button>
+    </div>
+    <div class="p-6 pt-2">
+      <p class="text-sm text-slate-500 dark:text-slate-400">
         View the status of your recent contact imports.
       </p>
     </div>
@@ -81,6 +89,7 @@ export default {
   components: {
     Spinner,
   },
+  emits: ['close'],
   data() {
     return {
       imports: [],
