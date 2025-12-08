@@ -61,7 +61,7 @@
 </template>
 
 <script>
-import Spinner from 'dashboard/components/widgets/Spinner.vue';
+import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import DataImportsAPI from 'dashboard/api/dataImports';
 import { formatDistanceToNow } from 'date-fns';
 
