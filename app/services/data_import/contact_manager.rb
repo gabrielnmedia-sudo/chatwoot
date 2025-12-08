@@ -45,7 +45,17 @@ class DataImport::ContactManager
   end
 
   def format_phone_number(phone_number)
-    phone_number.start_with?('+') ? phone_number : "+#{phone_number}"
+    # Strip non-numeric characters
+    numeric_phone = phone_number.to_s.gsub(/\D/, '')
+
+    # If 10 digits, assume US and prepend +1
+    return "+1#{numeric_phone}" if numeric_phone.length == 10
+
+    # If 11 digits and starts with 1, prepend + if missing
+    return "+#{numeric_phone}" if numeric_phone.length == 11 && numeric_phone.start_with?('1')
+
+    # Existing fallback: just ensure it starts with +
+    phone_number.to_s.start_with?('+') ? phone_number : "+#{phone_number}"
   end
 
   def update_contact_with_merged_attributes(params, contact)
