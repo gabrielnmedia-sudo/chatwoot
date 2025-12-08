@@ -37,9 +37,18 @@ class DataImportJob < ApplicationJob
   def parse_csv_and_build_contacts
     contacts = []
     rejected_contacts = []
+    headers_logged = false
 
     with_import_file do |file|
-      csv_reader(file).each do |row|
+      reader = csv_reader(file)
+      unless headers_logged
+        Rails.logger.info "DataImportJob: CSV Headers: #{reader.headers.inspect}"
+        headers_logged = true
+      end
+
+      reader.each_with_index do |row, index|
+        Rails.logger.info "DataImportJob: Processing Row #{index + 1}: #{row.to_h}" if index < 5 # Log first 5 rows sample
+
         contact_params = row.to_h.with_indifferent_access
         mapping = @data_import.settings.dig('mapping')
 
@@ -53,11 +62,13 @@ class DataImportJob < ApplicationJob
         if current_contact.valid?
           contacts << current_contact
         else
+          Rails.logger.warn "DataImportJob: Row #{index + 1} INVALID. Errors: #{current_contact.errors.full_messages}"
           append_rejected_contact(row, current_contact, rejected_contacts)
         end
       end
     end
 
+    Rails.logger.info "DataImportJob: Built #{contacts.length} valid contacts, rejected #{rejected_contacts.length}."
     [contacts, rejected_contacts]
   end
 
@@ -68,7 +79,13 @@ class DataImportJob < ApplicationJob
 
   def import_contacts(contacts)
     # <struct ActiveRecord::Import::Result failed_instances=[], num_inserts=1, ids=[444, 445], results=[]>
-    Contact.import(contacts, synchronize: contacts, on_duplicate_key_ignore: true, track_validation_failures: true, validate: true, batch_size: 1000)
+    if contacts.any?
+      result = Contact.import(contacts, synchronize: contacts, on_duplicate_key_ignore: true, track_validation_failures: true, validate: true, batch_size: 1000)
+      Rails.logger.info "DataImportJob: Contact.import result: #{result.inspect}"
+      Rails.logger.info "DataImportJob: Failed instances: #{result.failed_instances.inspect}"
+    else
+      Rails.logger.info "DataImportJob: No valid contacts to import."
+    end
     
     import_tag = @data_import.settings.dig('import_tag')
     apply_import_tag(contacts, import_tag) if import_tag.present?
