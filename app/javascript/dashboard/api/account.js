@@ -11,7 +11,7 @@ class AccountAPI extends ApiClient {
   }
 
   getTwilioToken() {
-    return axios.post(`${this.url}/twilio/tokens`);
+    return axios.post(`/api/v1/accounts/${this.accountIdFromRoute}/twilio/tokens`);
   }
 
   async getCacheKeys() {
