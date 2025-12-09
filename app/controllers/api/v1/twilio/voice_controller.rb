@@ -2,6 +2,7 @@ class Api::V1::Twilio::VoiceController < Api::BaseController
   skip_before_action :authenticate_user!, only: [:create], raise: false
   skip_before_action :check_subscription, only: [:create], raise: false
   skip_before_action :set_current_user, only: [:create], raise: false
+  skip_before_action :verify_authenticity_token, only: [:create], raise: false
 
   def create
     Rails.logger.info "TWILIO_VOICE: HIT! Incoming Request. Params: #{params.to_unsafe_h}"
