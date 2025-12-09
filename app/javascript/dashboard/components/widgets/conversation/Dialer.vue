@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useStore } from 'vuex';
 import { Device } from '@twilio/voice-sdk';
-// import { useStartNewConversation } from 'dashboard/composables/useStartNewConversation';
 
 const props = defineProps({
   phoneNumber: {
@@ -27,6 +27,7 @@ const getToken = async () => {
     return data.token;
   } catch (err) {
     error.value = 'Failed to get access token';
+    // eslint-disable-next-line no-console
     console.error(err);
     return null;
   }
@@ -43,17 +44,19 @@ const setupDevice = async () => {
     });
 
     device.value.on('ready', () => {
-      console.log('Twilio.Device Ready!');
+      // console.log('Twilio.Device Ready!');
       makeCall();
     });
 
     device.value.on('error', (err) => {
+      // eslint-disable-next-line no-console
       console.error('Twilio.Device Error:', err);
       error.value = err.message || 'Device error';
       status.value = 'closed';
     });
 
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error('Device setup failed', err);
     error.value = 'Failed to initialize calling device';
   }
@@ -77,22 +80,24 @@ const makeCall = async () => {
 
     call.value.on('accept', () => {
       status.value = 'open';
-      console.log('Call accepted');
+      // console.log('Call accepted');
     });
 
     call.value.on('disconnect', () => {
       status.value = 'closed';
       call.value = null;
-      console.log('Call disconnected');
+      // console.log('Call disconnected');
     });
 
     call.value.on('error', (err) => {
+      // eslint-disable-next-line no-console
       console.error('Call error:', err);
       error.value = 'Call failed';
       status.value = 'closed';
     });
 
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error('Failed to make call', err);
     error.value = 'Failed to connect call';
     status.value = 'closed';
@@ -126,6 +131,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <!-- eslint-disable @intlify/vue-i18n/no-raw-text, vue/no-bare-strings-in-template -->
   <div class="fixed bottom-4 right-4 z-50 w-72 bg-white rounded-lg shadow-xl border border-slate-200 p-4 dark:bg-slate-800 dark:border-slate-700">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-sm font-medium text-slate-900 dark:text-slate-100">
