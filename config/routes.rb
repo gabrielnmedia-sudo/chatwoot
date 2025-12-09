@@ -113,7 +113,6 @@ Rails.application.routes.draw do
           end
           namespace :twilio do
             resources :tokens, only: [:create]
-            resource :voice, only: [:create], controller: 'voice'
           end
           resources :conversations, only: [:index, :create, :show, :update, :destroy] do
             collection do
@@ -339,6 +338,10 @@ Rails.application.routes.draw do
 
       namespace :integrations do
         resources :webhooks, only: [:create]
+      end
+
+      namespace :twilio do
+        resource :voice, only: [:create], controller: 'voice'
       end
 
       # Frontend API endpoint to trigger SAML authentication flow

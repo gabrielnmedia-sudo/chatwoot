@@ -1,6 +1,6 @@
 class Api::V1::Twilio::VoiceController < Api::BaseController
-  skip_before_action :authenticate_user!, only: [:create]
-  skip_before_action :check_subscription, only: [:create]
+  skip_before_action :authenticate_user!, only: [:create], raise: false
+  skip_before_action :check_subscription, only: [:create], raise: false
 
   def create
     response = Twilio::TwiML::VoiceResponse.new do |r|
