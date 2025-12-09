@@ -116,7 +116,7 @@ const openFilter = () => {
       @close="isSidebarOpen = false" 
     />
 
-    <div v-else class="absolute top-4 right-4 z-10">
+    <div v-else class="absolute top-4 right-4 z-50">
       <Button
         icon="i-lucide-history"
         variant="outline"
