@@ -764,6 +764,7 @@ useEmitter('fetch_conversation_stats', () => {
 useEventListener(conversationDynamicScroller, 'scroll', handleScroll);
 
 onMounted(() => {
+  activeAssigneeTab.value = wootConstants.ASSIGNEE_TYPE.ALL;
   store.dispatch('setChatListFilters', conversationFilters.value);
   setFiltersFromUISettings();
   store.dispatch('setChatStatusFilter', activeStatus.value);
