@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, shallowRef, onMounted, onBeforeUnmount } from 'vue';
 import { useStore } from 'vuex';
 import { Device } from '@twilio/voice-sdk';
 
@@ -19,8 +19,8 @@ const emit = defineEmits(['close']);
 const store = useStore();
 const status = ref('initializing'); // initializing, ready, connecting, open, closed
 const muted = ref(false);
-const call = ref(null);
-const device = ref(null);
+const call = shallowRef(null);
+const device = shallowRef(null);
 const error = ref(null);
 
 const getToken = async () => {
