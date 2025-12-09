@@ -41,7 +41,7 @@ const state = {
   gitSha,
   maximumFileUploadSize: resolveMaximumFileUploadSize(maximumFileUploadSize),
   hCaptchaSiteKey,
-  installationName,
+  installationName: installationName === 'Chatwoot' ? 'Dealprinter' : installationName,
   logo,
   logoDark,
   logoThumbnail,
