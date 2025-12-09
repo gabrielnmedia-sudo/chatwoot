@@ -174,7 +174,7 @@ const showDialer = ref(false);
       />
       <MoreActions :conversation-id="currentChat.id" />
     </div>
-    </div>
+
   </div>
   <Dialer 
     v-if="showDialer"
