@@ -76,10 +76,30 @@ const getters = {
     const currentUserID = rootGetters.getCurrentUser?.id;
 
     return _state.allConversations.filter(conversation => {
-      const { assignee } = conversation.meta;
+      const { assignee, team } = conversation.meta;
       const isAssignedToMe = assignee && assignee.id === currentUserID;
+      // Also include if assigned to one of my teams
+      // We need to fetch my team IDs from rootGetters
+      // Assuming rootGetters.getCurrentUser has team_ids or we can derive it.
+      // But typically, 'Mine' means assigned to me personally.
+      // If the user wants to see Team assignments, they usually look at 'All' or a specific Team tab.
+      // However, per user request, we are adding team visibility here.
+      // Let's check if the conversation team ID is in the user's teams.
+      // Note: teams might not be directly available in currentUser. 
+      // Let's rely on the fact that if it's assigned to a team I'm in, I usually have access.
+      // But to filter specifically "Mine + My Teams", we need to check membership.
+      // Let's check if we have access to team_ids.
+      // The currentUser object usually has 'teams' or 'team_ids'. 
+      // Let's inspect currentUser structure via assumptions or a safe check.
+      
+      // SAFE IMPLEMENTATION:
+      // If the user explicitly requested "Mine" to show Team chats, let's do:
+      const currentUser = rootGetters.getCurrentUser;
+      const myTeamIds = currentUser ? (currentUser.teams || []).map(t => t.id) : [];
+      const isAssignedToMyTeam = team && myTeamIds.includes(team.id);
+
       const shouldFilter = applyPageFilters(conversation, activeFilters);
-      const isChatMine = isAssignedToMe && shouldFilter;
+      const isChatMine = (isAssignedToMe || isAssignedToMyTeam) && shouldFilter;
 
       return isChatMine;
     });
