@@ -1,4 +1,4 @@
-class Api::V1::Twilio::VoiceController < Api::V1::BaseController
+class Api::V1::Twilio::VoiceController < Api::BaseController
   skip_before_action :authenticate_user!, only: [:create]
   skip_before_action :check_subscription, only: [:create]
 
