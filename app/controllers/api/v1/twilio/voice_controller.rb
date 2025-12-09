@@ -16,7 +16,8 @@ class Api::V1::Twilio::VoiceController < Api::BaseController
       rescue StandardError => e
         Rails.logger.error "TWILIO_VOICE: Error processing call: #{e.message}"
         Rails.logger.error e.backtrace.join("\n")
-        r.say(message: 'An internal error occurred.')
+        # DEBUG MODE: Speak the exact error to the user
+        r.say(message: "System Error: #{e.message}")
       end
     end
 
