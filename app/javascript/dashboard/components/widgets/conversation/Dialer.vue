@@ -17,58 +17,63 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useStore();
-const status = ref('idle'); // idle, connecting, open, closed
+const status = ref('initializing'); // initializing, ready, connecting, open, closed
 const muted = ref(false);
 const call = ref(null);
 const device = ref(null);
 const error = ref(null);
-
-// const { createConversation } = useStartNewConversation();
 
 const getToken = async () => {
   try {
     const { data } = await store.dispatch('accounts/getTwilioToken');
     return data.token;
   } catch (err) {
+    alert(`Token Error: ${err.message}`);
     error.value = 'Failed to get access token';
-    // eslint-disable-next-line no-console
-    console.error(err);
     return null;
   }
 };
 
 const setupDevice = async () => {
+  status.value = 'initializing';
   const token = await getToken();
   if (!token) return;
 
   try {
+    // Initialize Device
+    console.log('Initializing Twilio Device...');
     device.value = new Device(token, {
       logLevel: 1,
       codecPreferences: ['opus', 'pcmu'],
     });
 
-    device.value.on('ready', () => {
-      // console.log('Twilio.Device Ready!');
-      makeCall();
+    // Register Event Listeners
+    device.value.on('registered', () => {
+      console.log('Device Registered');
+      status.value = 'ready';
+    });
+    
+    device.value.on('error', (err) => {
+      console.error('Twilio Device Error:', err);
+      // alert('Device logic error: ' + err.message);
+      error.value = err.message;
     });
 
-    device.value.on('error', (err) => {
-      // eslint-disable-next-line no-console
-      console.error('Twilio.Device Error:', err);
-      alert(`Twilio Device Error: ${err.message || err}`); // FORCE VISIBILITY
-      error.value = err.message || 'Device error';
-      status.value = 'closed';
-    });
+    // For v2+, we explicitly register
+    device.value.register();
+    // Fallback if 'registered' takes too long or isn't needed for outbound only
+    setTimeout(() => {
+      if (status.value === 'initializing') status.value = 'ready';
+    }, 1000);
 
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Device setup failed', err);
-    error.value = 'Failed to initialize calling device';
+    alert('Setup Failed: ' + err.message);
+    error.value = 'Device Setup Failed';
   }
 };
 
 const makeCall = async () => {
-  if (!device.value || status.value === 'open') return;
+  if (!device.value) return;
   
   status.value = 'connecting';
   error.value = null;
@@ -78,34 +83,34 @@ const makeCall = async () => {
       params: {
         To: props.phoneNumber,
         inbox_id: props.inboxId,
-        // Agent identity is handled by the token generation on backend
       },
     };
 
+    // This ALERTS if permission is denied
+    console.log('Attempting connection...');
     call.value = await device.value.connect(callParams);
 
+    // Call Event Listeners
     call.value.on('accept', () => {
       status.value = 'open';
-      // console.log('Call accepted');
     });
 
     call.value.on('disconnect', () => {
       status.value = 'closed';
       call.value = null;
-      // console.log('Call disconnected');
     });
 
     call.value.on('error', (err) => {
-      // eslint-disable-next-line no-console
-      console.error('Call error:', err);
-      error.value = 'Call failed';
+      alert('Call Error: ' + err.message);
+      error.value = err.message;
       status.value = 'closed';
     });
 
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to make call', err);
-    error.value = 'Failed to connect call';
+    // This is where Permission Denied errors go
+    console.error('Connection Failed:', err);
+    alert('Connection Failed (Mic Denied?): ' + err.message);
+    error.value = 'Failed to connect: ' + err.message;
     status.value = 'closed';
   }
 };
@@ -119,9 +124,8 @@ const toggleMute = () => {
 const hangup = () => {
   if (call.value) {
     call.value.disconnect();
-  } else {
-    emit('close');
   }
+  status.value = 'closed';
 };
 
 onMounted(() => {
@@ -150,36 +154,66 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="text-center mb-6">
-      <div class="text-2xl font-semibold mb-2" :class="{
-        'text-yellow-500': status === 'connecting',
-        'text-green-500': status === 'open',
-        'text-red-500': status === 'closed',
-      }">
-        {{ status === 'open' ? 'Connected' : (status === 'connecting' ? 'Calling...' : 'Ended') }}
+      
+      <!-- Status Display -->
+      <div v-if="status === 'initializing'" class="text-slate-500">
+        Initializing Device...
       </div>
-      <div v-if="error" class="text-xs text-red-500 mt-2">
+      
+      <div v-else-if="status === 'ready'" class="text-green-600 font-bold">
+        Ready to Call
+      </div>
+
+      <div v-if="status === 'connecting'" class="text-yellow-500 text-xl font-semibold">
+        Calling...
+      </div>
+
+      <div v-if="status === 'open'" class="text-green-500 text-xl font-semibold">
+        Connected 00:00
+      </div>
+
+      <div v-if="status === 'closed'" class="text-red-500 text-xl font-semibold">
+        Ended
+      </div>
+
+      <!-- Error Message -->
+      <div v-if="error" class="text-xs text-red-500 mt-2 bg-red-50 p-2 rounded">
         {{ error }}
       </div>
     </div>
 
+    <!-- Actions -->
     <div class="flex justify-center gap-4">
-      <button 
-        @click="toggleMute" 
-        :class="[
-          'p-3 rounded-full transition-colors',
-          muted ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-        ]"
-        :disabled="status !== 'open'"
-      >
-        <fluent-icon :icon="muted ? 'mic-off' : 'mic'" size="20" />
-      </button>
       
+      <!-- Start Call Button (Fix for Permission Issue) -->
       <button 
-        @click="hangup"
-        class="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
+        v-if="status === 'ready' || status === 'closed'"
+        @click="makeCall"
+        class="bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-transform hover:scale-105"
       >
-        <fluent-icon icon="call-end" size="20" />
+        <fluent-icon icon="call" size="24" />
       </button>
+
+      <!-- In-Call Controls -->
+      <template v-if="status === 'connecting' || status === 'open'">
+        <button 
+          @click="toggleMute" 
+          :class="[
+            'p-3 rounded-full transition-colors',
+            muted ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          ]"
+        >
+          <fluent-icon :icon="muted ? 'mic-off' : 'mic'" size="20" />
+        </button>
+        
+        <button 
+          @click="hangup"
+          class="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
+        >
+          <fluent-icon icon="call-end" size="20" />
+        </button>
+      </template>
+
     </div>
   </div>
 </template>
