@@ -55,6 +55,7 @@ const setupDevice = async () => {
     device.value.on('error', (err) => {
       // eslint-disable-next-line no-console
       console.error('Twilio.Device Error:', err);
+      alert(`Twilio Device Error: ${err.message || err}`); // FORCE VISIBILITY
       error.value = err.message || 'Device error';
       status.value = 'closed';
     });
