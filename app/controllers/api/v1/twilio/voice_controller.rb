@@ -29,20 +29,21 @@ class Api::V1::Twilio::VoiceController < Api::BaseController
     caller_id = ENV['TWILIO_PHONE_NUMBER']
 
     if params['inbox_id'].present?
-      inbox = Inbox.find_by(id: params['inbox_id'])
-      if inbox&.channel_type == 'Channel::TwilioSms'
-        channel = inbox.channel
-        if channel.phone_number.present?
-          caller_id = channel.phone_number
-        elsif channel.messaging_service_sid.present?
-          begin
-            client = Twilio::REST::Client.new(ENV['TWILIO_API_KEY_SID'], ENV['TWILIO_API_KEY_SECRET'], ENV['TWILIO_ACCOUNT_SID'])
-            phone_numbers = client.messaging.v1.services(channel.messaging_service_sid).phone_numbers.list(limit: 1)
-            caller_id = phone_numbers.first.phone_number if phone_numbers.any?
-          rescue StandardError => e
-            Rails.logger.error "TWILIO_VOICE: Failed to fetch Messaging Service number: #{e.message}"
+      begin
+        inbox = Inbox.find_by(id: params['inbox_id'])
+        if inbox&.channel_type == 'Channel::TwilioSms'
+          channel = inbox.channel
+          if channel.phone_number.present?
+            caller_id = channel.phone_number
+          elsif channel.messaging_service_sid.present?
+             client = Twilio::REST::Client.new(ENV['TWILIO_API_KEY_SID'], ENV['TWILIO_API_KEY_SECRET'], ENV['TWILIO_ACCOUNT_SID'])
+             phone_numbers = client.messaging.v1.services(channel.messaging_service_sid).phone_numbers.list(limit: 1)
+             caller_id = phone_numbers.first.phone_number if phone_numbers.any?
           end
         end
+      rescue StandardError => e
+        Rails.logger.error "TWILIO_VOICE: Lookup Failed (Safety Fallback): #{e.message}"
+        # Silently fail back to default number
       end
     end
 
