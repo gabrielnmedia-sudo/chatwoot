@@ -16,6 +16,10 @@ defineProps({
     type: Number,
     default: 0,
   },
+  replyRate: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const { t } = useI18n();
@@ -37,5 +41,8 @@ const { t } = useI18n();
   </span>
   <span class="flex-1 text-sm font-medium truncate text-n-slate-12">
     {{ messageStamp(new Date(scheduledAt), 'LLL d, h:mm a') }}
+  </span>
+  <span v-if="replyRate > 0" class="flex-shrink-0 text-sm font-medium text-n-slate-12">
+    • {{ replyRate }}% Reply Rate
   </span>
 </template>

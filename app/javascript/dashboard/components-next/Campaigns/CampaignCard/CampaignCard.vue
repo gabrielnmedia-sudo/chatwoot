@@ -42,6 +42,10 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  replyRate: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const emit = defineEmits(['edit', 'delete']);
@@ -113,6 +117,7 @@ const inboxIcon = computed(() => {
           :inbox-name="inboxName"
           :inbox-icon="inboxIcon"
           :scheduled-at="scheduledAt"
+          :reply-rate="replyRate"
         />
       </div>
     </div>

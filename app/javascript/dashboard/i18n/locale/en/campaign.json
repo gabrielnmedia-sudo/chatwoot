@@ -1,5 +1,9 @@
 {
   "CAMPAIGN": {
+    "DETAILS": {
+      "TITLE": "Campaign Details",
+      "LOADING": "Loading usage details..."
+    },
     "LIVE_CHAT": {
       "HEADER_TITLE": "Live chat campaigns",
       "NEW_CAMPAIGN": "Create campaign",

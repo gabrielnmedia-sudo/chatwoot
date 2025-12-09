@@ -37,6 +37,7 @@ const openDetails = campaign => {
       :sender="campaign.sender"
       :inbox="campaign.inbox"
       :scheduled-at="campaign.scheduled_at"
+      :reply-rate="campaign.reply_rate"
       :is-live-chat-type="isLiveChatType"
       class="cursor-pointer hover:bg-n-alpha-1"
       @click="openDetails(campaign)"
