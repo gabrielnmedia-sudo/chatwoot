@@ -92,11 +92,15 @@ const hasMultipleInboxes = computed(
 
 const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
 
+import Dialer from './Dialer.vue';
+
 const callContact = () => {
   if (currentContact.value.phone_number) {
-    window.open(`tel:${currentContact.value.phone_number}`, '_self');
+    showDialer.value = true;
   }
 };
+
+const showDialer = ref(false);
 </script>
 
 <template>
@@ -170,5 +174,11 @@ const callContact = () => {
       />
       <MoreActions :conversation-id="currentChat.id" />
     </div>
+    </div>
   </div>
+  <Dialer 
+    v-if="showDialer"
+    :phone-number="currentContact.phone_number"
+    @close="showDialer = false"
+  />
 </template>
