@@ -71,7 +71,7 @@ RUN if [ "$RAILS_ENV" = "production" ]; then \
   else bundle install -j 4 -r 3; \
   fi
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 RUN pnpm i
 
 COPY . /app
