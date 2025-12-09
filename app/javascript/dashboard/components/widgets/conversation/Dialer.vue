@@ -4,6 +4,7 @@ import { Device } from '@twilio/voice-sdk';
 import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
+import axios from 'axios';
 
 const props = defineProps({
   phoneNumber: {
