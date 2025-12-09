@@ -1,8 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { Device } from '@twilio/voice-sdk';
-import { useStore } from 'vuex';
-import { useStartNewConversation } from 'dashboard/composables/useStartNewConversation';
+// import { useStartNewConversation } from 'dashboard/composables/useStartNewConversation';
 
 const props = defineProps({
   phoneNumber: {
@@ -20,7 +19,7 @@ const call = ref(null);
 const device = ref(null);
 const error = ref(null);
 
-const { createConversation } = useStartNewConversation();
+// const { createConversation } = useStartNewConversation();
 
 const getToken = async () => {
   try {
