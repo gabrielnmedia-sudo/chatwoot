@@ -49,9 +49,9 @@ class Api::V1::Twilio::VoiceController < Api::BaseController
     end
 
     if params['To'].present?
-      dial = Twilio::TwiML::VoiceResponse::Dial.new(caller_id: caller_id)
-      dial.number(params['To'])
-      r.append(dial)
+      r.dial(caller_id: caller_id) do |d|
+        d.number(params['To'])
+      end
     else
       r.say(message: 'Invalid phone number.')
     end
