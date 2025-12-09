@@ -156,6 +156,10 @@ export const actions = {
   getCacheKeys: async () => {
     return AccountAPI.getCacheKeys();
   },
+
+  getTwilioToken: () => {
+    return AccountAPI.getTwilioToken();
+  },
 };
 
 export const mutations = {

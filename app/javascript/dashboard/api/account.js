@@ -10,6 +10,10 @@ class AccountAPI extends ApiClient {
     return axios.post(`${this.apiVersion}/accounts`, data);
   }
 
+  getTwilioToken() {
+    return axios.post(`${this.url}/twilio/tokens`);
+  }
+
   async getCacheKeys() {
     const response = await axios.get(
       `/api/v1/accounts/${this.accountIdFromRoute}/cache_keys`
