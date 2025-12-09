@@ -1,6 +1,8 @@
 <script setup>
 import CampaignCard from 'dashboard/components-next/Campaigns/CampaignCard/CampaignCard.vue';
 
+import { useRouter, useRoute } from 'vue-router';
+
 defineProps({
   campaigns: {
     type: Array,
@@ -13,9 +15,14 @@ defineProps({
 });
 
 const emit = defineEmits(['edit', 'delete']);
+const router = useRouter();
+const route = useRoute();
 
 const handleEdit = campaign => emit('edit', campaign);
 const handleDelete = campaign => emit('delete', campaign);
+const openDetails = campaign => {
+  router.push({ name: 'campaigns_details', params: { ...route.params, campaignId: campaign.id } });
+};
 </script>
 
 <template>
@@ -31,6 +38,8 @@ const handleDelete = campaign => emit('delete', campaign);
       :inbox="campaign.inbox"
       :scheduled-at="campaign.scheduled_at"
       :is-live-chat-type="isLiveChatType"
+      class="cursor-pointer hover:bg-n-alpha-1"
+      @click="openDetails(campaign)"
       @edit="handleEdit(campaign)"
       @delete="handleDelete(campaign)"
     />

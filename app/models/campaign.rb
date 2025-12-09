@@ -61,6 +61,26 @@ class Campaign < ApplicationRecord
     execute_campaign
   end
 
+  def total_order
+    audience&.select { |aud| aud['type'] == 'Label' }&.sum do |aud|
+      account.contacts.tagged_with(account.labels.find(aud['id']).title, any: true).count
+    end || 0
+  end
+
+  def total_sent
+    conversations.count
+  end
+
+  def reply_count
+    conversations.joins(:messages).where(messages: { message_type: :incoming }).distinct.count
+  end
+
+  def reply_rate
+    return 0 if total_sent.zero?
+
+    ((reply_count.to_f / total_sent) * 100).round(2)
+  end
+
   private
 
   def execute_campaign

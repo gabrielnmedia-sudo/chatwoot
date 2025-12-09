@@ -22,15 +22,45 @@ class Twilio::OneoffSmsCampaignService
     campaign.account.contacts.tagged_with(audience_labels, any: true).each do |contact|
       next if contact.phone_number.blank?
 
-      content = Liquid::CampaignTemplateService.new(campaign: campaign, contact: contact).call(campaign.message)
+      contact_inbox = contact.contact_inboxes.find_by(inbox: campaign.inbox)
+      next unless contact_inbox
 
-      begin
-        channel.send_message(to: contact.phone_number, body: content)
-        sleep 2
-      rescue Twilio::REST::TwilioError, Twilio::REST::RestError => e
-        Rails.logger.error("[Twilio Campaign #{campaign.id}] Failed to send to #{contact.phone_number}: #{e.message}")
-        next
-      end
+      conversation = find_or_create_conversation(contact_inbox)
+      create_message(conversation, contact)
+    rescue StandardError => e
+      Rails.logger.error("[Twilio Campaign #{campaign.id}] Failed to process contact #{contact.id}: #{e.message}")
     end
+  end
+
+  def find_or_create_conversation(contact_inbox)
+    conversation = contact_inbox.conversations.open.first
+    return conversation if conversation
+
+    ::Conversation.create!(
+      params(contact_inbox).merge(
+        additional_attributes: { campaign_id: campaign.id }
+      )
+    )
+  end
+
+  def create_message(conversation, contact)
+    content = Liquid::CampaignTemplateService.new(campaign: campaign, contact: contact).call(campaign.message)
+    conversation.messages.create!(
+      message_type: :outgoing,
+      content: content,
+      account_id: campaign.account_id,
+      inbox_id: campaign.inbox_id,
+      additional_attributes: { campaign_id: campaign.id }
+    )
+  end
+
+  def params(contact_inbox)
+    {
+      account_id: campaign.account_id,
+      inbox_id: campaign.inbox_id,
+      contact_id: contact_inbox.contact_id,
+      contact_inbox_id: contact_inbox.id,
+      campaign_id: campaign.id
+    }
   end
 end

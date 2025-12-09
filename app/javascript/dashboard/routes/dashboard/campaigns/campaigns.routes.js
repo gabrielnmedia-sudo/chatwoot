@@ -53,6 +53,12 @@ const campaignsRoutes = {
           },
           component: WhatsAppCampaignsPage,
         },
+        {
+          path: ':campaignId',
+          name: 'campaigns_details',
+          meta,
+          component: () => import('./pages/CampaignDetailsPage.vue'),
+        },
       ],
     },
   ],
