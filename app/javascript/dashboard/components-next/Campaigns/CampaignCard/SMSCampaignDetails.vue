@@ -42,7 +42,7 @@ const { t } = useI18n();
   <span class="flex-1 text-sm font-medium truncate text-n-slate-12">
     {{ messageStamp(new Date(scheduledAt), 'LLL d, h:mm a') }}
   </span>
-  <span v-if="replyRate > 0" class="flex-shrink-0 text-sm font-medium text-n-slate-12">
+  <span class="flex-shrink-0 text-sm font-medium text-n-slate-12">
     • {{ replyRate }}% Reply Rate
   </span>
 </template>
