@@ -75,6 +75,7 @@ COPY package.json ./
 RUN pnpm i
 
 COPY . /app
+RUN rm /app/pnpm-lock.yaml /app/Gemfile.lock
 
 # creating a log directory so that image wont fail when RAILS_LOG_TO_STDOUT is false
 # https://github.com/chatwoot/chatwoot/issues/701
