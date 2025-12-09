@@ -44,9 +44,7 @@ if (isLibraryMode) {
 
 export default defineConfig({
   plugins: plugins,
-  optimizeDeps: {
-    include: ['@twilio/voice-sdk'],
-  },
+
   build: {
     rollupOptions: {
       output: {
