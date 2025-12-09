@@ -8,16 +8,12 @@ class Api::V1::Twilio::VoiceController < Api::BaseController
     Rails.logger.info "TWILIO_VOICE: HIT! Incoming Request. Params: #{params.to_unsafe_h}"
 
     response = Twilio::TwiML::VoiceResponse.new do |r|
-      # AUDIO CHECKPOINT 1: Authentication Success
-      r.say(message: 'Connecting your call.')
-
       begin
         process_call(r)
       rescue StandardError => e
         Rails.logger.error "TWILIO_VOICE: Error processing call: #{e.message}"
         Rails.logger.error e.backtrace.join("\n")
-        # DEBUG MODE: Speak the exact error to the user
-        r.say(message: "System Error: #{e.message}")
+        r.say(message: 'We are sorry, but an error occurred while connecting your call.')
       end
     end
 
