@@ -16,8 +16,6 @@ class Api::V1::Twilio::VoiceController < Api::V1::BaseController
             # Fetch a number from the scheduling pool
             # We use the first available number in the service
             begin
-              client = Twilio::REST::Client.new(ENV['TWILIO_ACCOUNT_SID'], ENV['TWILIO_API_KEY_SECRET'], ENV['TWILIO_ACCOUNT_SID']) # Using Account SID as Password/Token is wrong if using API Key.
-              # Wait, standard client init is (account_sid, auth_token) OR (api_key, api_secret, account_sid)
               client = Twilio::REST::Client.new(ENV['TWILIO_API_KEY_SID'], ENV['TWILIO_API_KEY_SECRET'], ENV['TWILIO_ACCOUNT_SID'])
               
               phone_numbers = client.messaging.v1.services(channel.messaging_service_sid).phone_numbers.list(limit: 1)
