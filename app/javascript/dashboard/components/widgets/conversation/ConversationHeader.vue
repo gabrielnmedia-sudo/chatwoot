@@ -92,15 +92,18 @@ const hasMultipleInboxes = computed(
 
 const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
 
-import Dialer from './Dialer.vue';
+// import Dialer from './Dialer.vue';
+
 
 const callContact = () => {
-  if (currentContact.value.phone_number) {
-    showDialer.value = true;
-  }
+  console.log('Dialer disabled for debugging');
+  // if (currentContact.value.phone_number) {
+  //   showDialer.value = true;
+  // }
 };
 
 const showDialer = ref(false);
+
 </script>
 
 <template>
@@ -176,9 +179,9 @@ const showDialer = ref(false);
     </div>
 
   </div>
-  <Dialer 
+  <!-- <Dialer 
     v-if="showDialer"
     :phone-number="currentContact.phone_number"
     @close="showDialer = false"
-  />
+  /> -->
 </template>
