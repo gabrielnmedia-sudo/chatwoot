@@ -180,6 +180,7 @@ const showDialer = ref(false);
   <Dialer 
     v-if="showDialer"
     :phone-number="currentContact.phone_number"
+    :inbox-id="chat.inbox_id"
     @close="showDialer = false"
   />
 </template>

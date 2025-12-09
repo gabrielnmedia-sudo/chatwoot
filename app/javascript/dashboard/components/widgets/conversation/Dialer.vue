@@ -8,6 +8,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  inboxId: {
+    type: [Number, String],
+    default: null,
+  },
 });
 
 const emit = defineEmits(['close']);
@@ -72,6 +76,7 @@ const makeCall = async () => {
     const callParams = {
       params: {
         To: props.phoneNumber,
+        inbox_id: props.inboxId,
         // Agent identity is handled by the token generation on backend
       },
     };
