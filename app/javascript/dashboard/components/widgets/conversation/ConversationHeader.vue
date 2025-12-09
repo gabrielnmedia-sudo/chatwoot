@@ -164,7 +164,7 @@ const showDialer = ref(false);
         size="sm"
         variant="ghost"
         color="slate"
-        icon="i-lucide-phone"
+        icon="call"
         class="rounded-md"
         @click="callContact"
       />
