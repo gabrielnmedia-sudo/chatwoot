@@ -12,7 +12,7 @@ const store = useStore();
 const { t } = useI18n();
 
 const campaignId = computed(() => route.params.campaignId);
-const campaign = computed(() => store.getters['campaigns/getCampaign'](campaignId.value));
+const campaign = computed(() => store.getters['campaigns/getCampaign'](Number(campaignId.value)));
 const uiFlags = computed(() => store.getters['campaigns/getUIFlags']);
 
 onMounted(() => {

@@ -51,6 +51,9 @@ export const getters = {
   getAllCampaigns: _state => {
     return _state.records;
   },
+  getCampaign: _state => id => {
+    return _state.records.find(campaign => campaign.id === Number(id));
+  },
 };
 
 export const actions = {
