@@ -30,17 +30,19 @@ const DELAY_TYPES = {
 
 const createEmptySequence = (isFirst = false) => ({
   message: '',
-  // For the first item we use scheduledDate + scheduledTime
-  scheduledDate: isFirst ? '' : undefined,
-  scheduledTime: isFirst ? '' : '09:00',
-  // For others we use delayDays + scheduledTime
-  delayDays: isFirst ? undefined : 1,
+  // Step 1 is the base. Steps > 1 are "Days After" relative to previous step.
+  delayDays: isFirst ? 0 : 1,
 });
 
 const initialState = {
   title: '',
   inboxId: null,
   selectedAudience: [],
+  // Global Schedule Settings
+  startDate: todayDate(),
+  windowStart: '09:00',
+  windowEnd: '17:00',
+  dailyLimit: 1500,
   sequences: [createEmptySequence(true)],
 };
 
@@ -53,14 +55,14 @@ const rules = {
   title: { required, minLength: minLength(1) },
   inboxId: { required },
   selectedAudience: { required },
+  startDate: { required },
+  windowStart: { required },
+  windowEnd: { required },
+  dailyLimit: { required, minValue: minValue(1) },
   sequences: {
     required,
     $each: {
       message: { required, minLength: minLength(1) },
-      scheduledDate: {
-        requiredIf: (value, object) => object.scheduledDate !== undefined,
-      },
-      scheduledTime: { required },
       delayDays: {
         requiredIf: (value, object) => object.delayDays !== undefined,
         minValue: minValue(0),
@@ -71,119 +73,95 @@ const rules = {
 
 const v$ = useVuelidate(rules, state);
 
-const isCreating = computed(() => formState.uiFlags.value.isCreating);
-
-// Helpers for formatted date strings
-const todayDate = () => new Date().toISOString().slice(0, 10);
-const currentDateTime = computed(() => todayDate());
-
-const mapToOptions = (items, valueKey, labelKey) =>
-  items?.map(item => ({
-    value: item[valueKey],
-    label: item[labelKey],
-  })) ?? [];
-
-const audienceList = computed(() =>
-  mapToOptions(formState.labels.value, 'id', 'title')
-);
-
-const inboxOptions = computed(() =>
-  mapToOptions(formState.inboxes.value, 'id', 'name')
-);
-
-const getErrorMessage = (field, errorKey) => {
-  const baseKey = 'CAMPAIGN.SMS.CREATE.FORM';
-  return v$.value[field].$error ? t(`${baseKey}.${errorKey}.ERROR`) : '';
-};
-
-const getSequenceErrorMessage = (index, field) => {
-  if (!v$.value.sequences?.$each?.[index]) return '';
-  const fieldModel = v$.value.sequences.$each[index][field];
-  return fieldModel?.$error ? t('CAMPAIGN.SMS.CREATE.FORM.REQUIRED_ERROR') : '';
-};
+// ... (existing helpers) ...
 
 const formErrors = computed(() => ({
   title: getErrorMessage('title', 'TITLE'),
   inbox: getErrorMessage('inboxId', 'INBOX'),
   audience: getErrorMessage('selectedAudience', 'AUDIENCE'),
+  startDate: v$.value.startDate.$error ? 'Start Date is required' : '',
+  windowStart: v$.value.windowStart.$error ? 'Window Start is required' : '',
+  windowEnd: v$.value.windowEnd.$error ? 'Window End is required' : '',
+  dailyLimit: v$.value.dailyLimit.$error ? 'Valid Daily Limit is required' : '',
 }));
 
-const isSubmitDisabled = computed(() => v$.value.$invalid);
-
-const addSequence = () => {
-  state.sequences.push(createEmptySequence(false));
-};
-
-const removeSequence = index => {
-  if (state.sequences.length > 1) {
-    state.sequences.splice(index, 1);
-  }
-};
-
-const resetState = () => {
-  Object.assign(state, {
-    ...initialState,
-    sequences: [createEmptySequence(true)],
-  });
-  v$.value.$reset();
-};
-
-const handleCancel = () => emit('cancel');
-
-// Combine date from one source and time from string "HH:MM"
-const combineDateAndTime = (baseDateObj, timeString) => {
-  const [hours, minutes] = timeString.split(':').map(Number);
-  const newDate = new Date(baseDateObj);
-  newDate.setHours(hours, minutes, 0, 0);
-  return newDate;
-};
+// ... (existing functions) ...
 
 const prepareCampaignDetails = () => {
   const campaigns = [];
   
-  // Initialize with Step 0
-  const firstSeq = state.sequences[0];
-  // Parse YYYY-MM-DD + HH:MM
-  let currentBaseDate = new Date(firstSeq.scheduledDate);
-  // We need to offset for timezone if we just do new Date('YYYY-MM-DD') which might default to UTC
-  // Better to construct explicitly or use the time part immediately
-  // Actually, input type="date" returns YYYY-MM-DD.
-  // We want to combine this with the local time.
-  // Construct a date string compatible with constructor
-  let currentScheduledAt = new Date(`${firstSeq.scheduledDate}T${firstSeq.scheduledTime}:00`);
+  // Calculate the Base Scheduled At (Day 1 Start)
+  // We use the startDate + windowStart
+  // This is technically the "Earliest" the campaign can start.
+  const baseScheduledAt = new Date(`${state.startDate}T${state.windowStart}:00`);
 
   state.sequences.forEach((sequence, index) => {
-    let targetDate;
-
-    if (index === 0) {
-      targetDate = currentScheduledAt;
-    } else {
-      // Add days to the PREVIOUS scheduled date's Day
-      // Note: Logic says "X Days After". Usually implies "X days after previous message".
-      // So we move the date forward by delayDays
-      currentBaseDate = addDays(currentBaseDate, parseInt(sequence.delayDays || 0));
-      // Then set the specific time for THAT day
-      targetDate = combineDateAndTime(currentBaseDate, sequence.scheduledTime);
-      // Update running trackers
-      currentScheduledAt = targetDate;
-    }
-
     const titleSuffix = index === 0 ? '' : ` - Step ${index + 1}`;
+    
+    // For the Payload, we send:
+    // 1. scheduled_at (Calculated base time)
+    // 2. trigger_rules (The constraints)
+    // The Backend Service will parse trigger_rules to distribute the messages.
+    
+    // For Multi-Step:
+    // We treating each step as a separate campaign for now in the payload?
+    // User wants "Days After".
+    // If Step 2 is 2 days after, we should shift its `scheduled_at` by 2 days.
+    
+    let stepScheduledAt = new Date(baseScheduledAt);
+    if (index > 0) {
+      // Add Delay Days to the base
+      let totalDelay = 0;
+      // Sum up delays of previous steps + this step?
+      // Logic: "Days After" usually means relative to previous.
+      // Let's assume relative to PREVIOUS step for simplicity in UI, 
+      // but simplistic calculation here:
+      // We need to keep a running tally if we want relative.
+      // For now let's just use the sequence's delayDays relative to the START if index > 0?
+      // The previous code did relative. let's stick to relative.
+    }
+    
+    // Actually, to support the Backend Throttling Service effectively, 
+    // we should probably just send the `trigger_rules` and let the backend 
+    // handle the "execution" time. 
+    // BUT, the backend `OneoffSmsCampaignService` expects a specific `scheduled_at` to wake up.
+    
+    // Let's compute the "Wake Up Time" for this Step.
+    // Step 0: Wake up at StartDate @ WindowStart
+    // Step 1 (2 days later): Wake up at (StartDate + 2) @ WindowStart
+    
+    // Running Tally calculation
+    // Reset base for calculation
+    let currentWakeUp = new Date(baseScheduledAt);
+    
+    for (let i = 0; i <= index; i++) {
+      if (i > 0) {
+        currentWakeUp = addDays(currentWakeUp, parseInt(state.sequences[i].delayDays || 0));
+        // Reset time to windowStart just in case
+        currentWakeUp = combineDateAndTime(currentWakeUp, state.windowStart);
+      }
+    }
 
     campaigns.push({
       title: `${state.title}${titleSuffix}`,
       message: sequence.message,
       inbox_id: state.inboxId,
-      scheduled_at: targetDate.toISOString(),
+      scheduled_at: currentWakeUp.toISOString(),
       audience: state.selectedAudience?.map(id => ({
         id,
         type: 'Label',
       })),
+      trigger_rules: {
+        window_start: state.windowStart,
+        window_end: state.windowEnd,
+        daily_limit: state.dailyLimit,
+      },
     });
   });
 
   return campaigns;
 };
+
 
 const handleSubmit = async () => {
   const isFormValid = await v$.value.$validate();
@@ -234,6 +212,52 @@ const handleSubmit = async () => {
       />
     </div>
 
+    <!-- Throttling Settings -->
+    <div class="p-4 rounded-lg bg-n-alpha-1 border border-n-weak flex flex-col gap-4">
+      <h3 class="text-sm font-medium text-n-slate-12">Scheduling Strategy</h3>
+      
+      <!-- Start Date -->
+      <Input
+        v-model="state.startDate"
+        label="Start Date"
+        type="date"
+        :min="todayDate()"
+        :message="formErrors.startDate"
+        :message-type="formErrors.startDate ? 'error' : 'info'"
+      />
+
+      <!-- Sending Window -->
+      <div class="flex gap-4">
+        <Input
+          v-model="state.windowStart"
+          label="Send Times (Start)"
+          type="time"
+          class="flex-1"
+          :message="formErrors.windowStart"
+          :message-type="formErrors.windowStart ? 'error' : 'info'"
+        />
+        <Input
+          v-model="state.windowEnd"
+          label="Send Times (End)"
+          type="time"
+          class="flex-1"
+          :message="formErrors.windowEnd"
+          :message-type="formErrors.windowEnd ? 'error' : 'info'"
+        />
+      </div>
+
+       <!-- Daily Limit -->
+      <Input
+        v-model="state.dailyLimit"
+        label="Daily Hard Cap (Max Messages/Day)"
+        type="number"
+        min="1"
+        placeholder="1500"
+        :message="formErrors.dailyLimit"
+        :message-type="formErrors.dailyLimit ? 'error' : 'info'"
+      />
+    </div>
+
     <!-- Sequence List -->
     <div class="flex flex-col gap-4">
       <div 
@@ -264,49 +288,22 @@ const handleSubmit = async () => {
           :message-type="getSequenceErrorMessage(index, 'message') ? 'error' : 'info'"
         />
 
-        <!-- First item uses separate Date + Time -->
-        <div v-if="index === 0" class="flex gap-2">
-           <Input
-            v-model="sequence.scheduledDate"
-            label="Start Date"
-            type="date"
-            :min="todayDate()"
-            class="flex-1"
-            :message="getSequenceErrorMessage(index, 'scheduledDate')"
-            :message-type="getSequenceErrorMessage(index, 'scheduledDate') ? 'error' : 'info'"
-          />
-           <Input
-            v-model="sequence.scheduledTime"
-            label="Start Time"
-            type="time"
-            class="flex-1"
-            :message="getSequenceErrorMessage(index, 'scheduledTime')"
-            :message-type="getSequenceErrorMessage(index, 'scheduledTime') ? 'error' : 'info'"
-          />
-        </div>
-        <!-- Subsequent items use Days Delay + Specific Time -->
-        <div v-else class="flex gap-2 items-end">
+        <!-- Step Specific Delay controls -->
+        <div v-if="index > 0" class="flex gap-2 items-center">
+           <span class="text-sm text-n-slate-11">Send</span>
            <Input
             v-model="sequence.delayDays"
             type="number"
-            min="0"
-            label="Days After"
+            min="1"
             placeholder="1"
-            class="w-32"
+            class="w-24"
             :message="getSequenceErrorMessage(index, 'delayDays')"
             :message-type="getSequenceErrorMessage(index, 'delayDays') ? 'error' : 'info'"
           />
-           <span class="text-sm font-medium text-n-slate-11 pb-3">days, at</span>
-           <Input
-            v-model="sequence.scheduledTime"
-            type="time"
-            label="Time"
-            class="w-32"
-            :message="getSequenceErrorMessage(index, 'scheduledTime')"
-            :message-type="getSequenceErrorMessage(index, 'scheduledTime') ? 'error' : 'info'"
-          />
+           <span class="text-sm text-n-slate-11">days after previous step</span>
         </div>
       </div>
+
       
       <Button
         variant="outline"

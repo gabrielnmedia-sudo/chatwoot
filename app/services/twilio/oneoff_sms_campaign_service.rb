@@ -19,48 +19,63 @@ class Twilio::OneoffSmsCampaignService
   delegate :channel, to: :inbox
 
   def process_audience(audience_labels)
-    campaign.account.contacts.tagged_with(audience_labels, any: true).each do |contact|
+    # 1. Parse Throttling Constraints
+    trigger_rules = campaign.trigger_rules || {}
+    daily_limit = trigger_rules['daily_limit'].to_i
+    daily_limit = 10_000 if daily_limit.zero? # Default to a high number if no limit
+    
+    window_start_str = trigger_rules['window_start'] || '00:00'
+    window_end_str = trigger_rules['window_end'] || '23:59'
+
+    # Prepare Base Schedule (Start Date)
+    base_scheduled_at = campaign.scheduled_at || Time.current
+
+    campaign.account.contacts.tagged_with(audience_labels, any: true).each_with_index do |contact, index|
       next if contact.phone_number.blank?
 
-      contact_inbox = contact.contact_inboxes.find_by(inbox: campaign.inbox)
-      next unless contact_inbox
-
-      conversation = find_or_create_conversation(contact_inbox)
-      create_message(conversation, contact)
+      # 2. Calculate Day Offset based on Daily Limit
+      # e.g. Limit 100. Index 0-99 -> Day 0. Index 100-199 -> Day 1.
+      day_offset = index / daily_limit
+      
+      # 3. Calculate Target Date
+      target_date = base_scheduled_at + day_offset.days
+      
+      # 4. Apply Window
+      # We just set the time to the window_start for simplicity of the "batch" start.
+      # Or we could distribute them evenly within the window. 
+      # User requested "3pm to 5pm". 
+      # Simplest approach: Schedule them ALL at the start of the window (Sidekiq will just process them as fast as it can).
+      # If we want to be fancy, we spread them out. 
+      # Let's start with scheduling at Window Start for that day.
+      
+      start_hour, start_minute = window_start_str.split(':').map(&:to_i)
+      target_timestamp = target_date.change(hour: start_hour, min: start_minute)
+      
+      # Ensure we don't schedule in the past if the window passed for "Today".
+      # If target_timestamp < Time.current, we might want to push to tomorrow?
+      # But standard behavior is "execute immediately if in past", which is fine for "Today's batch".
+      
+      # 5. Schedule Job
+      ::Campaigns::SmsMessageJob.set(wait_until: target_timestamp).perform_later(
+        campaign.id,
+        contact.id,
+        campaign.inbox.id
+      )
+      
     rescue StandardError => e
-      Rails.logger.error("[Twilio Campaign #{campaign.id}] Failed to process contact #{contact.id}: #{e.message}")
+      Rails.logger.error("[Twilio Campaign #{campaign.id}] Failed to schedule contact #{contact.id}: #{e.message}")
     end
   end
 
   def find_or_create_conversation(contact_inbox)
-    conversation = contact_inbox.conversations.open.first
-    return conversation if conversation
-
-    ::Conversation.create!(
-      params(contact_inbox).merge(
-        additional_attributes: { campaign_id: campaign.id }
-      )
-    )
+    # Deprecated in Service: Logic moved to Job
   end
 
   def create_message(conversation, contact)
-    content = Liquid::CampaignTemplateService.new(campaign: campaign, contact: contact).call(campaign.message)
-    conversation.messages.create!(
-      message_type: :outgoing,
-      content: content,
-      account_id: campaign.account_id,
-      inbox_id: campaign.inbox_id,
-      additional_attributes: { campaign_id: campaign.id }
-    )
+    # Deprecated in Service: Logic moved to Job
   end
 
   def params(contact_inbox)
-    {
-      account_id: campaign.account_id,
-      inbox_id: campaign.inbox_id,
-      contact_id: contact_inbox.contact_id,
-      contact_inbox_id: contact_inbox.id,
-      campaign_id: campaign.id
-    }
+    # Deprecated in Service: Logic moved to Job
   end
 end
