@@ -157,13 +157,14 @@ const showDialer = ref(false);
       class="flex flex-row items-center justify-start xl:justify-end flex-shrink-0 gap-2 w-full xl:w-auto header-actions-wrap"
     >
       <Button
-        v-if="currentContact.phone_number"
-        v-tooltip="$t('CONTACT_PANEL.CALL')"
+        v-if="currentContact"
+        v-tooltip="currentContact.phone_number ? $t('CONTACT_PANEL.CALL') : 'No phone number'"
         size="sm"
         variant="ghost"
         color="slate"
         icon="call"
         class="rounded-md"
+        :disabled="!currentContact.phone_number"
         @click="callContact"
       />
       <SLACardLabel
