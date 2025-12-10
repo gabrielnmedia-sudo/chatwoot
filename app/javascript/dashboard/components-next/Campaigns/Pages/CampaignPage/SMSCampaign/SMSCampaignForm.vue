@@ -30,10 +30,11 @@ const DELAY_TYPES = {
 
 const createEmptySequence = (isFirst = false) => ({
   message: '',
-  // For the first item we use scheduledAt, for others we use delay
-  scheduledAt: isFirst ? null : undefined,
-  delayValue: isFirst ? undefined : 0,
-  delayType: isFirst ? undefined : DELAY_TYPES.HOURS,
+  // For the first item we use scheduledDate + scheduledTime
+  scheduledDate: isFirst ? '' : undefined,
+  scheduledTime: isFirst ? '' : '09:00',
+  // For others we use delayDays + scheduledTime
+  delayDays: isFirst ? undefined : 1,
 });
 
 const initialState = {
@@ -45,7 +46,7 @@ const initialState = {
 
 const state = reactive({
   ...initialState,
-  sequences: [createEmptySequence(true)], // Reactive array needs explicit initialization in reactive() or reset
+  sequences: [createEmptySequence(true)],
 });
 
 const rules = {
@@ -56,11 +57,12 @@ const rules = {
     required,
     $each: {
       message: { required, minLength: minLength(1) },
-      scheduledAt: {
-        requiredIf: (value, object) => object.scheduledAt !== undefined,
+      scheduledDate: {
+        requiredIf: (value, object) => object.scheduledDate !== undefined,
       },
-      delayValue: {
-        requiredIf: (value, object) => object.delayValue !== undefined,
+      scheduledTime: { required },
+      delayDays: {
+        requiredIf: (value, object) => object.delayDays !== undefined,
         minValue: minValue(0),
       },
     },
@@ -71,11 +73,9 @@ const v$ = useVuelidate(rules, state);
 
 const isCreating = computed(() => formState.uiFlags.value.isCreating);
 
-const currentDateTime = computed(() => {
-  const now = new Date();
-  const localTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-  return localTime.toISOString().slice(0, 16);
-});
+// Helpers for formatted date strings
+const todayDate = () => new Date().toISOString().slice(0, 10);
+const currentDateTime = computed(() => todayDate());
 
 const mapToOptions = (items, valueKey, labelKey) =>
   items?.map(item => ({
@@ -91,19 +91,11 @@ const inboxOptions = computed(() =>
   mapToOptions(formState.inboxes.value, 'id', 'name')
 );
 
-const delayOptions = [
-  { value: DELAY_TYPES.MINUTES, label: t('CAMPAIGN.SMS.CREATE.FORM.DELAY.MINUTES') },
-  { value: DELAY_TYPES.HOURS, label: t('CAMPAIGN.SMS.CREATE.FORM.DELAY.HOURS') },
-  { value: DELAY_TYPES.DAYS, label: t('CAMPAIGN.SMS.CREATE.FORM.DELAY.DAYS') },
-];
-
 const getErrorMessage = (field, errorKey) => {
   const baseKey = 'CAMPAIGN.SMS.CREATE.FORM';
   return v$.value[field].$error ? t(`${baseKey}.${errorKey}.ERROR`) : '';
 };
 
-// Helper for sequence errors
-// Helper for sequence errors
 const getSequenceErrorMessage = (index, field) => {
   if (!v$.value.sequences?.$each?.[index]) return '';
   const fieldModel = v$.value.sequences.$each[index][field];
@@ -117,9 +109,6 @@ const formErrors = computed(() => ({
 }));
 
 const isSubmitDisabled = computed(() => v$.value.$invalid);
-
-const formatToUTCString = localDateTime =>
-  localDateTime ? new Date(localDateTime).toISOString() : null;
 
 const addSequence = () => {
   state.sequences.push(createEmptySequence(false));
@@ -141,48 +130,51 @@ const resetState = () => {
 
 const handleCancel = () => emit('cancel');
 
-const calculateScheduledAt = (baseDate, delayValue, delayType) => {
-  const date = new Date(baseDate);
-  if (!delayValue) return date;
-
-  switch (delayType) {
-    case DELAY_TYPES.MINUTES:
-      return addMinutes(date, parseInt(delayValue));
-    case DELAY_TYPES.HOURS:
-      return addHours(date, parseInt(delayValue));
-    case DELAY_TYPES.DAYS:
-      return addDays(date, parseInt(delayValue));
-    default:
-      return date;
-  }
+// Combine date from one source and time from string "HH:MM"
+const combineDateAndTime = (baseDateObj, timeString) => {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const newDate = new Date(baseDateObj);
+  newDate.setHours(hours, minutes, 0, 0);
+  return newDate;
 };
 
 const prepareCampaignDetails = () => {
   const campaigns = [];
-  let currentScheduledAt = new Date(state.sequences[0].scheduledAt);
+  
+  // Initialize with Step 0
+  const firstSeq = state.sequences[0];
+  // Parse YYYY-MM-DD + HH:MM
+  let currentBaseDate = new Date(firstSeq.scheduledDate);
+  // We need to offset for timezone if we just do new Date('YYYY-MM-DD') which might default to UTC
+  // Better to construct explicitly or use the time part immediately
+  // Actually, input type="date" returns YYYY-MM-DD.
+  // We want to combine this with the local time.
+  // Construct a date string compatible with constructor
+  let currentScheduledAt = new Date(`${firstSeq.scheduledDate}T${firstSeq.scheduledTime}:00`);
 
   state.sequences.forEach((sequence, index) => {
-    // If it's not the first valid sequence, calculate time based on previous
-    if (index > 0) {
-      currentScheduledAt = calculateScheduledAt(
-        currentScheduledAt,
-        sequence.delayValue,
-        sequence.delayType
-      );
+    let targetDate;
+
+    if (index === 0) {
+      targetDate = currentScheduledAt;
+    } else {
+      // Add days to the PREVIOUS scheduled date's Day
+      // Note: Logic says "X Days After". Usually implies "X days after previous message".
+      // So we move the date forward by delayDays
+      currentBaseDate = addDays(currentBaseDate, parseInt(sequence.delayDays || 0));
+      // Then set the specific time for THAT day
+      targetDate = combineDateAndTime(currentBaseDate, sequence.scheduledTime);
+      // Update running trackers
+      currentScheduledAt = targetDate;
     }
 
     const titleSuffix = index === 0 ? '' : ` - Step ${index + 1}`;
-    
-    // Validate that we have a valid time (sanity check)
-    if (isNaN(currentScheduledAt.getTime())) {
-       // fallback or error handling if needed
-    }
 
     campaigns.push({
       title: `${state.title}${titleSuffix}`,
       message: sequence.message,
       inbox_id: state.inboxId,
-      scheduled_at: currentScheduledAt.toISOString(), // Send UTC ISO string
+      scheduled_at: targetDate.toISOString(),
       audience: state.selectedAudience?.map(id => ({
         id,
         type: 'Label',
@@ -272,35 +264,47 @@ const handleSubmit = async () => {
           :message-type="getSequenceErrorMessage(index, 'message') ? 'error' : 'info'"
         />
 
-        <!-- First item uses absolute time, others use relative delay -->
-        <div v-if="index === 0">
+        <!-- First item uses separate Date + Time -->
+        <div v-if="index === 0" class="flex gap-2">
            <Input
-            v-model="sequence.scheduledAt"
-            :label="t('CAMPAIGN.SMS.CREATE.FORM.SCHEDULED_AT.LABEL')"
-            type="datetime-local"
-            :min="currentDateTime"
-            :placeholder="t('CAMPAIGN.SMS.CREATE.FORM.SCHEDULED_AT.PLACEHOLDER')"
-            :message="getSequenceErrorMessage(index, 'scheduledAt')"
-            :message-type="getSequenceErrorMessage(index, 'scheduledAt') ? 'error' : 'info'"
+            v-model="sequence.scheduledDate"
+            label="Start Date"
+            type="date"
+            :min="todayDate()"
+            class="flex-1"
+            :message="getSequenceErrorMessage(index, 'scheduledDate')"
+            :message-type="getSequenceErrorMessage(index, 'scheduledDate') ? 'error' : 'info'"
+          />
+           <Input
+            v-model="sequence.scheduledTime"
+            label="Start Time"
+            type="time"
+            class="flex-1"
+            :message="getSequenceErrorMessage(index, 'scheduledTime')"
+            :message-type="getSequenceErrorMessage(index, 'scheduledTime') ? 'error' : 'info'"
           />
         </div>
+        <!-- Subsequent items use Days Delay + Specific Time -->
         <div v-else class="flex gap-2 items-end">
            <Input
-            v-model="sequence.delayValue"
+            v-model="sequence.delayDays"
             type="number"
             min="0"
-            label="Delay"
-            placeholder="0"
-            class="w-24"
-            :message="getSequenceErrorMessage(index, 'delayValue')"
-            :message-type="getSequenceErrorMessage(index, 'delayValue') ? 'error' : 'info'"
+            label="Days After"
+            placeholder="1"
+            class="w-32"
+            :message="getSequenceErrorMessage(index, 'delayDays')"
+            :message-type="getSequenceErrorMessage(index, 'delayDays') ? 'error' : 'info'"
           />
-           <ComboBox
-             v-model="sequence.delayType"
-             :options="delayOptions"
-             class="w-32 [&>div>button]:bg-n-alpha-black2"
-           />
-           <span class="text-xs text-n-slate-11 pb-3">after previous message</span>
+           <span class="text-sm font-medium text-n-slate-11 pb-3">days, at</span>
+           <Input
+            v-model="sequence.scheduledTime"
+            type="time"
+            label="Time"
+            class="w-32"
+            :message="getSequenceErrorMessage(index, 'scheduledTime')"
+            :message-type="getSequenceErrorMessage(index, 'scheduledTime') ? 'error' : 'info'"
+          />
         </div>
       </div>
       
