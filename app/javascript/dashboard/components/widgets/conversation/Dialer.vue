@@ -83,7 +83,13 @@ const createOutboundConversation = async () => {
   }
 
   // If we still don't have an inbox or contact, we can't create a conversation
-  if (!inboxId || !props.contactId) {
+  if (!inboxId) {
+    error.value = 'Call logging failed: No Twilio Inbox found.';
+    return;
+  }
+
+  if (!props.contactId) {
+    // If calling a raw number without contact context, we can't log to a conversion
     return;
   }
 
@@ -99,7 +105,7 @@ const createOutboundConversation = async () => {
       },
     });
   } catch (err) {
-    // Ignore error
+    error.value = 'Failed to create call log.';
   }
 };
 
