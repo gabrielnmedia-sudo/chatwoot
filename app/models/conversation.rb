@@ -123,6 +123,7 @@ class Conversation < ApplicationRecord
   after_create_commit :load_attributes_created_by_db_triggers
 
   delegate :auto_resolve_after, to: :account
+  delegate :pipeline_stage, to: :contact, allow_nil: true
 
   def can_reply?
     Conversations::MessageWindowService.new(self).can_reply?
