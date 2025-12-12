@@ -1,0 +1,64 @@
+{
+  "PIPELINE_MGMT": {
+    "HEADER": "Pipeline Stages",
+    "HEADER_BTN_TXT": "Add Stage",
+    "LOADING": "Fetching stages",
+    "DESCRIPTION": "Pipeline stages help you track the progress of your leads and conversations. You can assign a stage to a contact/conversation.",
+    "LEARN_MORE": "Learn more about pipeline stages",
+    "SEARCH_404": "There are no items matching this query",
+    "LIST": {
+      "404": "There are no pipeline stages available in this account.",
+      "TITLE": "Manage Pipeline Stages",
+      "DESC": "Stages let you track the progress of your conversations.",
+      "TABLE_HEADER": {
+        "NAME": "Name",
+        "DESCRIPTION": "Description",
+        "COLOR": "Color"
+      }
+    },
+    "FORM": {
+      "NAME": {
+        "LABEL": "Stage Name",
+        "PLACEHOLDER": "Stage name",
+        "REQUIRED_ERROR": "Stage name is required",
+        "MINIMUM_LENGTH_ERROR": "Minimum length 2 is required",
+        "VALID_ERROR": "Only Alphabets, Numbers, Hyphen and Underscore are allowed"
+      },
+      "COLOR": {
+        "LABEL": "Color"
+      },
+      "EDIT": "Edit",
+      "CREATE": "Create",
+      "DELETE": "Delete",
+      "CANCEL": "Cancel"
+    },
+    "ADD": {
+      "TITLE": "Add Stage",
+      "DESC": "Add a new stage to your pipeline.",
+      "API": {
+        "SUCCESS_MESSAGE": "Stage added successfully",
+        "ERROR_MESSAGE": "There was an error, please try again"
+      }
+    },
+    "EDIT": {
+      "TITLE": "Edit Stage",
+      "API": {
+        "SUCCESS_MESSAGE": "Stage updated successfully",
+        "ERROR_MESSAGE": "There was an error, please try again"
+      }
+    },
+    "DELETE": {
+      "BUTTON_TEXT": "Delete",
+      "API": {
+        "SUCCESS_MESSAGE": "Stage deleted successfully",
+        "ERROR_MESSAGE": "There was an error, please try again"
+      },
+      "CONFIRM": {
+        "TITLE": "Confirm Deletion",
+        "MESSAGE": "Are you sure to delete ",
+        "YES": "Yes, Delete ",
+        "NO": "No, Keep "
+      }
+    }
+  }
+}

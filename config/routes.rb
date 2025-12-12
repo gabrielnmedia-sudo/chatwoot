@@ -216,6 +216,11 @@ Rails.application.routes.draw do
             end
           end
           resources :labels, only: [:index, :show, :create, :update, :destroy]
+          resources :pipeline_stages, only: [:index, :show, :create, :update, :destroy] do
+            collection do
+              post :reorder
+            end
+          end
 
           resources :notifications, only: [:index, :update, :destroy] do
             collection do

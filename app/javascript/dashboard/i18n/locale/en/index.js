@@ -38,6 +38,7 @@ import teamsSettings from './teamsSettings.json';
 import whatsappTemplates from './whatsappTemplates.json';
 import contentTemplates from './contentTemplates.json';
 import mfa from './mfa.json';
+import pipelineMgmt from './pipelineMgmt.json';
 
 export default {
   ...advancedFilters,
@@ -80,4 +81,5 @@ export default {
   ...whatsappTemplates,
   ...contentTemplates,
   ...mfa,
+  ...pipelineMgmt,
 };

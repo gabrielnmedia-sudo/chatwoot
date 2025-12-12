@@ -261,6 +261,12 @@ const menuItems = computed(() => {
           to: accountScopedRoute('labels_list'),
         },
         {
+          name: 'Settings Pipeline Stages',
+          label: t('SIDEBAR.PIPELINE_STAGES'),
+          icon: 'i-lucide-kanban',
+          to: accountScopedRoute('pipeline_stages_list'),
+        },
+        {
           name: 'Settings Custom Attributes',
           label: t('SIDEBAR.CUSTOM_ATTRIBUTES'),
           icon: 'i-lucide-code',
