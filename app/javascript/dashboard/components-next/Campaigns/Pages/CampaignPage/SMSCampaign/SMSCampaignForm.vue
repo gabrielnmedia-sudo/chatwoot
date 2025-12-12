@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useVuelidate } from '@vuelidate/core';
 import { required, minLength, minValue } from '@vuelidate/validators';
 import { useMapGetter } from 'dashboard/composables/store';
-import { addMinutes, addHours, addDays } from 'date-fns';
+import { addDays } from 'date-fns';
 
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
@@ -22,11 +22,22 @@ const formState = {
   inboxes: useMapGetter('inboxes/getSMSInboxes'),
 };
 
-const DELAY_TYPES = {
-  MINUTES: 'minutes',
-  HOURS: 'hours',
-  DAYS: 'days',
-};
+// Helpers for formatted date strings
+const todayDate = () => new Date().toISOString().slice(0, 10);
+
+const mapToOptions = (items, valueKey, labelKey) =>
+  items?.map(item => ({
+    value: item[valueKey],
+    label: item[labelKey],
+  })) ?? [];
+
+const audienceList = computed(() =>
+  mapToOptions(formState.labels.value, 'id', 'title')
+);
+
+const inboxOptions = computed(() =>
+  mapToOptions(formState.inboxes.value, 'id', 'name')
+);
 
 const createEmptySequence = (isFirst = false) => ({
   message: '',
@@ -73,7 +84,18 @@ const rules = {
 
 const v$ = useVuelidate(rules, state);
 
-// ... (existing helpers) ...
+const isCreating = computed(() => formState.uiFlags.value.isCreating);
+
+const getErrorMessage = (field, errorKey) => {
+  const baseKey = 'CAMPAIGN.SMS.CREATE.FORM';
+  return v$.value[field].$error ? t(`${baseKey}.${errorKey}.ERROR`) : '';
+};
+
+const getSequenceErrorMessage = (index, field) => {
+  if (!v$.value.sequences?.$each?.[index]) return '';
+  const fieldModel = v$.value.sequences.$each[index][field];
+  return fieldModel?.$error ? t('CAMPAIGN.SMS.CREATE.FORM.REQUIRED_ERROR') : '';
+};
 
 const formErrors = computed(() => ({
   title: getErrorMessage('title', 'TITLE'),
@@ -85,7 +107,35 @@ const formErrors = computed(() => ({
   dailyLimit: v$.value.dailyLimit.$error ? 'Valid Daily Limit is required' : '',
 }));
 
-// ... (existing functions) ...
+const isSubmitDisabled = computed(() => v$.value.$invalid);
+
+const addSequence = () => {
+  state.sequences.push(createEmptySequence(false));
+};
+
+const removeSequence = index => {
+  if (state.sequences.length > 1) {
+    state.sequences.splice(index, 1);
+  }
+};
+
+const resetState = () => {
+  Object.assign(state, {
+    ...initialState,
+    sequences: [createEmptySequence(true)],
+  });
+  v$.value.$reset();
+};
+
+const handleCancel = () => emit('cancel');
+
+// Combine date from one source and time from string "HH:MM"
+const combineDateAndTime = (baseDateObj, timeString) => {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const newDate = new Date(baseDateObj);
+  newDate.setHours(hours, minutes, 0, 0);
+  return newDate;
+};
 
 const prepareCampaignDetails = () => {
   const campaigns = [];
@@ -136,7 +186,7 @@ const prepareCampaignDetails = () => {
     
     for (let i = 0; i <= index; i++) {
       if (i > 0) {
-        currentWakeUp = addDays(currentWakeUp, parseInt(state.sequences[i].delayDays || 0));
+        currentWakeUp = addDays(currentWakeUp, parseInt(state.sequences[i].delayDays || 0, 10));
         // Reset time to windowStart just in case
         currentWakeUp = combineDateAndTime(currentWakeUp, state.windowStart);
       }
@@ -249,7 +299,7 @@ const handleSubmit = async () => {
        <!-- Daily Limit -->
       <Input
         v-model="state.dailyLimit"
-        label="Daily Hard Cap (Max Messages/Day)"
+        label="Global Tenant Limit (Max Messages/Day)"
         type="number"
         min="1"
         placeholder="1500"
