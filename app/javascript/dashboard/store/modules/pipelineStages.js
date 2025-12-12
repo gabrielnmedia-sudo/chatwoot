@@ -25,7 +25,7 @@ export const actions = {
     commit(types.default.SET_PIPELINE_STAGES_UI_FLAG, { isFetching: true });
     try {
       const response = await PipelineStagesAPI.get();
-      commit(types.default.SET_PIPELINE_STAGES, response.data);
+      commit(types.default.SET_PIPELINE_STAGES, response.data.payload);
     } catch (error) {
       // Ignore error
     } finally {
