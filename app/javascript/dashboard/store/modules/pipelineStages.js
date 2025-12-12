@@ -35,7 +35,9 @@ export const actions = {
   create: async ({ commit }, pipelineStage) => {
     commit(types.default.SET_PIPELINE_STAGES_UI_FLAG, { isCreating: true });
     try {
-      const response = await PipelineStagesAPI.create(pipelineStage);
+      const response = await PipelineStagesAPI.create({
+        pipeline_stage: pipelineStage,
+      });
       commit(types.default.ADD_PIPELINE_STAGE, response.data);
     } catch (error) {
       throw new Error(error);
@@ -46,7 +48,9 @@ export const actions = {
   update: async ({ commit }, { id, ...pipelineStage }) => {
     commit(types.default.SET_PIPELINE_STAGES_UI_FLAG, { isUpdating: true });
     try {
-      const response = await PipelineStagesAPI.update(id, pipelineStage);
+      const response = await PipelineStagesAPI.update(id, {
+        pipeline_stage: pipelineStage,
+      });
       commit(types.default.EDIT_PIPELINE_STAGE, response.data);
     } catch (error) {
       throw new Error(error);
