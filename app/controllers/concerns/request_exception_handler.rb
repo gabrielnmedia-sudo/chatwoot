@@ -3,6 +3,7 @@ module RequestExceptionHandler
 
   included do
     rescue_from ActiveRecord::RecordInvalid, with: :render_record_invalid
+    rescue_from StandardError, with: :render_error_response
   end
 
   private
@@ -53,7 +54,11 @@ module RequestExceptionHandler
 
   def render_error_response(exception)
     log_handled_error(exception)
-    render json: exception.to_hash, status: exception.http_status
+    render json: {
+      error: exception.message,
+      message: exception.message,
+      backtrace: exception.backtrace&.first(5)
+    }, status: :internal_server_error
   end
 
   def log_handled_error(exception)

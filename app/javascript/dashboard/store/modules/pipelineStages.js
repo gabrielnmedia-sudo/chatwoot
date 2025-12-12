@@ -40,7 +40,8 @@ export const actions = {
       });
       commit(types.default.ADD_PIPELINE_STAGE, response.data);
     } catch (error) {
-      throw new Error(error);
+      const errorMessage = error?.response?.data?.message || error.message;
+      throw new Error(errorMessage);
     } finally {
       commit(types.default.SET_PIPELINE_STAGES_UI_FLAG, { isCreating: false });
     }
@@ -53,7 +54,8 @@ export const actions = {
       });
       commit(types.default.EDIT_PIPELINE_STAGE, response.data);
     } catch (error) {
-      throw new Error(error);
+      const errorMessage = error?.response?.data?.message || error.message;
+      throw new Error(errorMessage);
     } finally {
       commit(types.default.SET_PIPELINE_STAGES_UI_FLAG, { isUpdating: false });
     }
@@ -74,7 +76,8 @@ export const actions = {
       await PipelineStagesAPI.reorder(ordering);
       commit(types.default.SET_PIPELINE_STAGES_ORDER, ordering);
     } catch (error) {
-      throw new Error(error);
+      const errorMessage = error?.response?.data?.message || error.message;
+      throw new Error(errorMessage);
     }
   },
 };
