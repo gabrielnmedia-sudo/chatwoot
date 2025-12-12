@@ -66,7 +66,54 @@ export default {
       currentChat: 'getSelectedChat',
       currentUser: 'getCurrentUser',
       teams: 'teams/getTeams',
+      pipelineStages: 'pipelineStages/getPipelineStages',
     }),
+    pipelineStagesList() {
+      return this.pipelineStages.map(stage => ({
+        id: stage.id,
+        name: stage.name,
+        thumbnail: {
+          name: 'span',
+          content: '',
+          style: {
+            backgroundColor: stage.color,
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            display: 'inline-block',
+            marginRight: '8px',
+            border: '1px solid var(--color-border)',
+          },
+        },
+      }));
+    },
+    assignedPipelineStage() {
+      const contact = this.$store.getters['contacts/getContact'](
+        this.currentChat.meta.sender.id
+      );
+      if (!contact || !contact.pipeline_stage_id) return null;
+      const stage = this.pipelineStages.find(
+        s => s.id === contact.pipeline_stage_id
+      );
+      if (!stage) return null;
+      return {
+        id: stage.id,
+        name: stage.name,
+        thumbnail: {
+          name: 'span',
+          content: '',
+          style: {
+            backgroundColor: stage.color,
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            display: 'inline-block',
+            marginRight: '8px',
+            border: '1px solid var(--color-border)',
+          },
+        },
+      };
+    },
     hasAnAssignedTeam() {
       return !!this.currentChat?.meta?.team;
     },
@@ -155,6 +202,9 @@ export default {
       return false;
     },
   },
+  mounted() {
+    this.$store.dispatch('pipelineStages/get');
+  },
   methods: {
     onSelfAssign() {
       const {
@@ -201,6 +251,26 @@ export default {
         this.assignedPriority.id === selectedPriorityItem.id;
 
       this.assignedPriority = isSamePriority ? null : selectedPriorityItem;
+    },
+    onClickAssignPipelineStage(selectedStage) {
+      const currentStageId = this.assignedPipelineStage?.id;
+      const newStageId = selectedStage?.id;
+
+      // If clicking the same stage, deselect it (set to null)
+      const stageIdToUpdate = currentStageId === newStageId ? null : newStageId;
+
+      const contactId = this.currentChat.meta.sender.id;
+      this.$store
+        .dispatch('contacts/update', {
+          id: contactId,
+          pipeline_stage_id: stageIdToUpdate,
+        })
+        .then(() => {
+          useAlert(this.$t('PIPELINE_MGMT.NOTIFICATIONS.UPDATE_SUCCESS'));
+        })
+        .catch(() => {
+          useAlert(this.$t('PIPELINE_MGMT.NOTIFICATIONS.UPDATE_ERROR'));
+        });
     },
   },
 };
@@ -281,5 +351,21 @@ export default {
       :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONVERSATION_LABELS')"
     />
     <ConversationLabels :conversation-id="conversationId" />
+    <div class="multiselect-wrap--small">
+      <ContactDetailsItem compact :title="$t('SIDEBAR.PIPELINE_STAGES')" />
+      <MultiselectDropdown
+        :options="pipelineStagesList"
+        :selected-item="assignedPipelineStage"
+        :multiselector-title="$t('PIPELINE_MGMT.MULTI_SELECTOR.TITLE')"
+        :multiselector-placeholder="
+          $t('PIPELINE_MGMT.MULTI_SELECTOR.PLACEHOLDER')
+        "
+        :no-search-result="$t('PIPELINE_MGMT.MULTI_SELECTOR.SEARCH.NO_RESULTS')"
+        :input-placeholder="
+          $t('PIPELINE_MGMT.MULTI_SELECTOR.SEARCH.PLACEHOLDER')
+        "
+        @select="onClickAssignPipelineStage"
+      />
+    </div>
   </div>
 </template>

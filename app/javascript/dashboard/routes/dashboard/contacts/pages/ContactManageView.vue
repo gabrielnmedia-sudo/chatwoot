@@ -13,6 +13,7 @@ import ContactNotes from 'dashboard/components-next/Contacts/ContactsSidebar/Con
 import ContactHistory from 'dashboard/components-next/Contacts/ContactsSidebar/ContactHistory.vue';
 import ContactMerge from 'dashboard/components-next/Contacts/ContactsSidebar/ContactMerge.vue';
 import ContactCustomAttributes from 'dashboard/components-next/Contacts/ContactsSidebar/ContactCustomAttributes.vue';
+import ContactPipeline from 'dashboard/components-next/Contacts/ContactsSidebar/ContactPipeline.vue';
 
 const store = useStore();
 const route = useRoute();
@@ -150,6 +151,7 @@ onMounted(() => {
         @go-to-contacts-list="goToContactsList"
       />
       <template #sidebar>
+        <ContactPipeline :selected-contact="selectedContact" />
         <div class="px-6">
           <TabBar
             :tabs="tabs"
