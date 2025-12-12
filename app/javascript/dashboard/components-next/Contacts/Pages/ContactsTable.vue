@@ -88,9 +88,11 @@ const getLabelData = label => {
 
 const showDialer = ref(false);
 const activeCallNumber = ref('');
+const activeContactId = ref(null);
 
-const openDialer = phoneNumber => {
+const openDialer = (phoneNumber, contactId) => {
   activeCallNumber.value = phoneNumber;
+  activeContactId.value = contactId;
   showDialer.value = true;
 };
 </script>
@@ -113,7 +115,7 @@ const openDialer = phoneNumber => {
             <th v-for="col in visibleColumns" :key="col.key" class="px-4 py-3">
               {{ col.label }}
             </th>
-            <!-- eslint-disable-next-line vue/no-bare-strings-in-template -->
+            <!-- eslint-disable-next-line vue/no-bare-strings-in-template, @intlify/vue-i18n/no-raw-text -->
             <th class="px-4 py-3 w-20">Actions</th>
           </tr>
         </thead>
@@ -228,7 +230,7 @@ const openDialer = phoneNumber => {
                   variant="ghost"
                   color="slate"
                   size="xs"
-                  @click.stop="openDialer(contact.phoneNumber)"
+                  @click.stop="openDialer(contact.phoneNumber, contact.id)"
                 />
                 <Button
                   icon="i-lucide-external-link"
@@ -246,6 +248,7 @@ const openDialer = phoneNumber => {
     <Dialer
       v-if="showDialer"
       :phone-number="activeCallNumber"
+      :contact-id="activeContactId"
       @close="showDialer = false"
     />
   </div>

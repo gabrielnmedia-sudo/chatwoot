@@ -14,6 +14,7 @@ import { conversationListPageURL } from 'dashboard/helper/URLHelper';
 import { snoozedReopenTime } from 'dashboard/helper/snoozeHelpers';
 import { useInbox } from 'dashboard/composables/useInbox';
 import { useI18n } from 'vue-i18n';
+import Dialer from './Dialer.vue';
 
 const props = defineProps({
   chat: {
@@ -92,16 +93,13 @@ const hasMultipleInboxes = computed(
 
 const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
 
-import Dialer from './Dialer.vue';
+const showDialer = ref(false);
 
 const callContact = () => {
   if (currentContact.value.phone_number) {
     showDialer.value = true;
   }
 };
-
-const showDialer = ref(false);
-
 </script>
 
 <template>
@@ -158,7 +156,11 @@ const showDialer = ref(false);
     >
       <Button
         v-if="currentContact"
-        v-tooltip="currentContact.phone_number ? $t('CONTACT_PANEL.CALL') : 'No phone number'"
+        v-tooltip="
+          currentContact.phone_number
+            ? $t('CONTACT_PANEL.CALL')
+            : 'No phone number'
+        "
         size="sm"
         variant="ghost"
         color="slate"
@@ -176,12 +178,12 @@ const showDialer = ref(false);
       />
       <MoreActions :conversation-id="currentChat.id" />
     </div>
-
   </div>
-  <Dialer 
+  <Dialer
     v-if="showDialer"
     :phone-number="currentContact.phone_number"
     :inbox-id="chat.inbox_id"
+    :contact-id="currentContact.id"
     @close="showDialer = false"
   />
 </template>
